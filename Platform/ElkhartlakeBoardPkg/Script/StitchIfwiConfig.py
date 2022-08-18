@@ -7,6 +7,8 @@
 ##
 from StitchLoader import *
 
+boardcfg_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+
 extra_usage_txt = \
 """This is an IFWI stitch config script for Slim Bootloader For the FIT tool and
 stitching ingredients listed in step 2 below, please contact your Intel representative.
@@ -40,6 +42,18 @@ stitching ingredients listed in step 2 below, please contact your Intel represen
          StitchIfwi.py -b vm -p ehl -w D:\Stitch -s Stitch_Components.zip -c StitchIfwiConfig.py
 
 """
+
+def get_boardconfig_setting(lvalue):
+    boardcfg_file = os.path.join(boardcfg_dir, 'BoardConfig.py')
+    with open(boardcfg_file) as f:
+        boardcfg_lines = f.readlines()
+
+    pattern = re.escape(lvalue) + r'\s*='
+    for line in boardcfg_lines:
+        if re.search(pattern, line):
+            rvalue = re.search(r'=\s*(.*)\s*', line).group(1)
+
+    return rvalue
 
 def get_bpmgen2_params_change_list ():
     params_change_list = []
@@ -79,39 +93,50 @@ def get_component_replace_list():
       ('IFWI/BIOS/TS1/ACM0',      'Input/acm.bin',           'dummy',  '',                              ''),
     ]
 
+    # get the configurations from BoardConfig.py
+    enable_preoschecker = get_boardconfig_setting("self.ENABLE_PRE_OS_CHECKER")
+    enable_psefwloading = get_boardconfig_setting("self.ENABLE_PSEFW_LOADING")
+    enable_tsn = get_boardconfig_setting("self.ENABLE_TSN")
+    enable_tcc = get_boardconfig_setting("self.ENABLE_TCC")
+    rsa_sign_type = get_boardconfig_setting("self._RSA_SIGN_TYPE").strip("'")
+
     # need to set ENABLE_PRE_OS_CHECKER = 1 in BoardConfig.py
-    if os.path.exists('IPFW/PreOsChecker.bin'):
-        replace_list.append (
-            ('IFWI/BIOS/NRD/IPFW/POSC', 'IPFW/PreOsChecker.bin',   'dummy',  'KEY_ID_CONTAINER_COMP_RSA3072', 0 ), # Pre-OS Checker
-        )
+    if enable_preoschecker == 1:
+        if os.path.exists('IPFW/PreOsChecker.bin'):
+            replace_list.append (
+                ('IFWI/BIOS/NRD/IPFW/POSC', 'IPFW/PreOsChecker.bin',   'dummy',  'KEY_ID_CONTAINER_COMP'+'_'+rsa_sign_type, 0 ), # Pre-OS Checker
+            )
 
     # need to set ENABLE_PSEFW_LOADING = 1 in BoardConfig.py
-    if os.path.exists('IPFW/PseFw.bin'):
-        replace_list.append (
-            ('IFWI/BIOS/NRD/IPFW/PSEF', 'IPFW/PseFw.bin',          'lz4',    'KEY_ID_CONTAINER_COMP_RSA3072', 0 ), # OSE FW
-        )
+    if enable_psefwloading == 1:
+        if os.path.exists('IPFW/PseFw.bin'):
+            replace_list.append (
+                ('IFWI/BIOS/NRD/IPFW/PSEF', 'IPFW/PseFw.bin',          'lz4',    'KEY_ID_CONTAINER_COMP'+'_'+rsa_sign_type, 0 ), # OSE FW
+            )
 
     # need to set ENABLE_TSN = 1 in BoardConfig.py
-    if os.path.exists('IPFW/PseTsnIpConfig.bin'):
-        replace_list.append (
-            ('IFWI/BIOS/NRD/IPFW/TSIP', 'IPFW/PseTsnIpConfig.bin', 'lz4',    'KEY_ID_CONTAINER_COMP_RSA3072', 0 ), # PSE TSN IP
-        )
+    if enable_tsn == 1:
+        if os.path.exists('IPFW/PseTsnIpConfig.bin'):
+            replace_list.append (
+                ('IFWI/BIOS/NRD/IPFW/TSIP', 'IPFW/PseTsnIpConfig.bin', 'lz4',    'KEY_ID_CONTAINER_COMP'+'_'+rsa_sign_type, 0 ), # PSE TSN IP
+            )
 
-    if os.path.exists('IPFW/TsnConfig.bin'):
-        replace_list.append (
-            ('IFWI/BIOS/NRD/IPFW/TSNC', 'IPFW/TsnConfig.bin',      'lz4',    'KEY_ID_CONTAINER_COMP_RSA3072', 0 ), # TSN Config
-        )
+        if os.path.exists('IPFW/TsnConfig.bin'):
+            replace_list.append (
+                ('IFWI/BIOS/NRD/IPFW/TSNC', 'IPFW/TsnConfig.bin',      'lz4',    'KEY_ID_CONTAINER_COMP'+'_'+rsa_sign_type, 0 ), # TSN Config
+            )
 
-    if os.path.exists('IPFW/TsnMacAddr.bin'):
-        replace_list.append (
-            ('IFWI/BIOS/NRD/IPFW/TMAC', 'IPFW/TsnMacAddr.bin',     'lz4',    'KEY_ID_CONTAINER_COMP_RSA3072', 0 ), # TSN MAC Address
-        )
+        if os.path.exists('IPFW/TsnMacAddr.bin'):
+            replace_list.append (
+                ('IFWI/BIOS/NRD/IPFW/TMAC', 'IPFW/TsnMacAddr.bin',     'lz4',    'KEY_ID_CONTAINER_COMP'+'_'+rsa_sign_type, 0 ), # TSN MAC Address
+            )
 
     # need to set ENABLE_TCC = 1 in BoardConfig.py
-    if os.path.exists('IPFW/crl.bin'):
-        replace_list.append (
-            ('IFWI/BIOS/NRD/IPFW/TCCM', 'IPFW/crl.bin',            'lz4',    'KEY_ID_CONTAINER_COMP_RSA3072', 0 ), # TCC CRL binary
-        )
+    if enable_tcc == 1:
+        if os.path.exists('IPFW/crl.bin'):
+            replace_list.append (
+                ('IFWI/BIOS/NRD/IPFW/TCCM', 'IPFW/crl.bin',            'lz4',    'KEY_ID_CONTAINER_COMP'+'_'+rsa_sign_type, 0 ), # TCC CRL binary
+            )
 
     return replace_list
 
