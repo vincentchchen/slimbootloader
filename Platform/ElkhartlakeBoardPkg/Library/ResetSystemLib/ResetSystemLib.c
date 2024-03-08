@@ -72,7 +72,7 @@ ResetShutdown (
   ///
   /// Firstly, GPE0_EN should be disabled to avoid any GPI waking up the system from S5
   ///
-  IoWrite32 (ACPI_BASE_ADDRESS + R_ACPI_IO_GPE0_EN_127_96, 0);
+//  IoWrite32 (ACPI_BASE_ADDRESS + R_ACPI_IO_GPE0_EN_127_96, 0);
 
   ///
   /// Secondly, PwrSts register must be cleared

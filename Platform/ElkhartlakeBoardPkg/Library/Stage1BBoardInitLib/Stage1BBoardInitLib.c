@@ -896,7 +896,25 @@ RtcInit (
   UINT8   PmConf1;
   UINT8   Data8;
 
+#define AG3E 0
+#if AG3E == 1
+  UINT8   PmConfA;
+#endif
+
+#define WAKE_SOURCE 0 // 1 for RTC alarm, 2 for wake alarm device
+#if WAKE_SOURCE == 1
+  UINT32  AcpiPm1Sts;
+  UINT8   Sec, Min, Hour, Day;
+  UINT8   RtcB;
+  UINT8   RtcC;
+#elif WAKE_SOURCE == 2
+  UINT32  PmWadtAc;
+  UINT32  AcpiGpeSts, AcpiGpeEn;
+#endif
+
   Bar     = MmioRead32 (MM_PCI_ADDRESS (0, PCI_DEVICE_NUMBER_PCH_PMC, PCI_FUNCTION_NUMBER_PCH_PMC, R_PMC_CFG_BASE)) & ~0x0F;
+  DEBUG ((DEBUG_INFO, "RtcInit Bar = %x\n", Bar));
+
   PmConf1 = MmioRead8 (Bar + R_PMC_PWRM_GEN_PMCON_B);
 
   RtcRead (R_RTC_IO_REGA);
@@ -937,6 +955,93 @@ RtcInit (
     PmConf1 &= ~(B_PMC_PWRM_GEN_PMCON_B_RTC_PWR_STS);
     MmioWrite8 (Bar + R_PMC_PWRM_GEN_PMCON_B, PmConf1);
   }
+
+#if AG3E == 1
+  // AG3E (return to S5 after a power failure (G3))
+  PmConfA = MmioRead8 (Bar + R_PMC_PWRM_GEN_PMCON_A);
+  PmConfA |= BIT0;
+  MmioWrite8 (Bar + R_PMC_PWRM_GEN_PMCON_A, PmConfA);
+#endif
+
+#if WAKE_SOURCE == 1 // use RTC alarm
+
+  // read clear Alarm Flag (BIT5)
+  RtcC = RtcRead (0x0C);
+  DEBUG ((DEBUG_INFO, "RtcC (AF at BIT5) = %x\n", RtcC));
+
+  // set Alarm Interrupt Enable (BIT5)
+  RtcB = RtcRead (0x0B);
+  DEBUG ((DEBUG_INFO, "RtcB (AIE at BIT5) = %x\n", RtcB));
+  RtcB |= BIT5;
+  RtcWrite (0x0B, RtcB);
+
+  // set RTC_EN (BIT26) and write clear RTC_STS (BIT10)
+  AcpiPm1Sts = IoRead32 (ACPI_BASE_ADDRESS + R_ACPI_IO_PM1_STS);
+  DEBUG ((DEBUG_INFO, "AcpiPm1Sts (RTC_EN at BIT26, RTC_STS at BIT10) before = %x\n", AcpiPm1Sts));
+
+  AcpiPm1Sts |= B_ACPI_IO_PM1_EN_RTC_EN;
+  AcpiPm1Sts |= B_ACPI_IO_PM1_STS_RTC;
+  IoWrite32 (ACPI_BASE_ADDRESS + R_ACPI_IO_PM1_STS, AcpiPm1Sts);
+
+  AcpiPm1Sts = IoRead32 (ACPI_BASE_ADDRESS + R_ACPI_IO_PM1_STS);
+  DEBUG ((DEBUG_INFO, "AcpiPm1Sts (RTC_EN at BIT26, RTC_STS at BIT10) after = %x\n", AcpiPm1Sts));
+
+  // check previous RTC alarm
+  Sec = RtcRead (R_RTC_SECONDSALARM);
+  Min = RtcRead (R_RTC_MINUTESALARM);
+  Hour = RtcRead (R_RTC_HOURSALARM);
+  DEBUG ((DEBUG_INFO, "previous Rtc Alarm Sec = %x, Min = %x, Hour = %x\n", Sec, Min, Hour));
+
+  // check RTC clock
+  Sec = RtcRead (RTC_SECONDS);
+  Min = RtcRead (RTC_MINUTES);
+  Hour = RtcRead (RTC_HOURS);
+  Day = RtcRead (RTC_DAY_OF_MONTH);
+  DEBUG ((DEBUG_INFO, "current Rtc Clock Sec = %x, Min = %x, Hour = %x, Date = %x\n", Sec, Min, Hour, Day));
+
+  // set RTC alarm (represented in BCD)
+  Min = Min + 2;
+  if ((Min & 0x0F) >= 0x0A) {
+    Min = (Min + 0x10) & 0xF0; // not handle for 0x60
+  }
+  RtcWrite (R_RTC_SECONDSALARM, Sec);
+  RtcWrite (R_RTC_MINUTESALARM, Min);
+  RtcWrite (R_RTC_HOURSALARM, Hour);
+
+#elif WAKE_SOURCE == 2 // use wake alarm device
+
+  // check and write clear WADT_STS (BIT18)
+  AcpiGpeSts = IoRead32 (ACPI_BASE_ADDRESS + R_ACPI_IO_GPE0_STS_127_96);
+  DEBUG ((DEBUG_INFO, "AcpiGpeSts (WADT_STS at BIT18) before = %x\n", AcpiGpeSts));
+
+  AcpiGpeSts |= BIT18;
+  IoWrite32 (ACPI_BASE_ADDRESS + R_ACPI_IO_GPE0_STS_127_96, AcpiGpeSts);
+
+  AcpiGpeSts = IoRead32 (ACPI_BASE_ADDRESS + R_ACPI_IO_GPE0_STS_127_96);
+  DEBUG ((DEBUG_INFO, "AcpiGpeSts (WADT_STS at BIT18) after = %x\n", AcpiGpeSts));
+
+  // set WADT_EN (BIT18)
+  // - note that WADT_EN is disabled by OsLoader shell cmd "reset off"
+  // - Platform/ElkhartlakeBoardPkg/Library/ResetSystemLib/ResetSystemLib.c
+  AcpiGpeEn = IoRead32 (ACPI_BASE_ADDRESS + R_ACPI_IO_GPE0_EN_127_96);
+  DEBUG ((DEBUG_INFO, "AcpiGpeEn (WADT_EN at BIT18) before = %x\n", AcpiGpeEn));
+
+  AcpiGpeEn |= BIT18;
+  IoWrite32 (ACPI_BASE_ADDRESS + R_ACPI_IO_GPE0_EN_127_96, AcpiGpeEn);
+
+  AcpiGpeEn = IoRead32 (ACPI_BASE_ADDRESS + R_ACPI_IO_GPE0_EN_127_96);
+  DEBUG ((DEBUG_INFO, "AcpiGpeEn (WADT_EN at BIT18) after = %x\n", AcpiGpeEn));
+
+  // set count down value in sec
+  PmWadtAc = MmioRead32 (Bar + R_PMC_PWRM_WADT_AC);
+  DEBUG ((DEBUG_INFO, "PmWadtAc before = %x\n", PmWadtAc));
+  PmWadtAc = 60;
+  MmioWrite32 (Bar + R_PMC_PWRM_WADT_AC, PmWadtAc);
+
+  PmWadtAc = MmioRead32 (Bar + R_PMC_PWRM_WADT_AC);
+  DEBUG ((DEBUG_INFO, "PmWadtAc after = %x\n", PmWadtAc));
+
+#endif
 }
 
 /**
