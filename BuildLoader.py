@@ -25,6 +25,11 @@ import multiprocessing
 from   ctypes import *
 from   BuildUtility import *
 
+from   importlib import import_module
+sys.path.append (os.path.join(os.path.dirname(os.path.realpath(__file__)), "Platform" , "CommonBoardPkg", "Script"))
+from   BtgSign import sign_slimboot_binary
+from   BtgSign import SIGNING_KEY as BTG_SIGNING_KEY
+
 import glob
 
 def rebuild_basetools ():
@@ -191,6 +196,7 @@ class BaseBoard(object):
         self.CPU_SORT_METHOD       = 0
 
         self.ACM_SIZE              = 0
+        self.ACM_IN_PLACE          = 0
         self.ACM_FIT_VERISON       = 0x100
         self.DIAGNOSTICACM_SIZE    = 0
         self.UCODE_SIZE            = 0
@@ -1372,7 +1378,13 @@ class Build(object):
 
         # create ACM binary
         if self._board.ACM_SIZE > 0:
-            gen_file_with_size (os.path.join(self._fv_dir, 'ACM.bin'), self._board.ACM_SIZE)
+            acm_file_path = os.path.join(os.environ['PLT_SOURCE'], 'Platform', self._board.BOARD_PKG_NAME, 'Binaries', 'ACM.bin')
+            if os.path.exists(acm_file_path):
+                align_pad_file(acm_file_path, os.path.join(self._fv_dir, "ACM.bin"), self._board.ACM_SIZE,
+                               STITCH_OPS.MODE_FILE_PAD, STITCH_OPS.MODE_POS_TAIL)
+                self._board.ACM_IN_PLACE = 1
+            else:
+                gen_file_with_size (os.path.join(self._fv_dir, 'ACM.bin'), self._board.ACM_SIZE)
 
         # create Diagnostic ACM binary
         if self._board.DIAGNOSTICACM_SIZE > 0:
@@ -1453,6 +1465,106 @@ class Build(object):
         print('%s' % flash_map_text)
 
 
+    def update_bpmgen2_params (self, params_change_list, InFile, OutFile):
+        InFileptr = open(InFile, 'r', encoding='utf8')
+        lines = InFileptr.readlines()
+        InFileptr.close()
+
+        for variable, value in params_change_list:
+            for linenumber, line in enumerate(lines):
+                if line.split(':')[0].strip() == variable:
+                    lines[linenumber] = variable + ':    ' + value + '\n'
+                    break
+
+        if OutFile == '':
+            OutFile = Infile
+
+        Outfileptr = open(OutFile, 'w')
+        Outfileptr.write("".join(lines))
+        Outfileptr.close()
+
+
+    def sign(self, bpmgen2_dir, stitch_cfg_file):
+        print("\nSign with BpmGen2 ...")
+
+        # Get the Bpmgen2 params change list from StitchIfwiConfig.py
+        stitch_cfg_path = os.path.join(os.environ['PLT_SOURCE'], 'Platform', self._board.BOARD_PKG_NAME, 'Script')
+        stitch_cfg_name = ''
+        if stitch_cfg_file != '':
+            if os.path.exists(os.path.join(stitch_cfg_path, stitch_cfg_file)):
+                stitch_cfg_name = stitch_cfg_file[:-3]
+        else:
+            if os.path.exists(os.path.join(stitch_cfg_path, 'StitchIfwiConfig_'+self._board.BOARD_NAME+'.py')):
+                stitch_cfg_name = 'StitchIfwiConfig_'+self._board.BOARD_NAME
+            elif os.path.exists(os.path.join(stitch_cfg_path, 'StitchIfwiConfig.py')):
+                stitch_cfg_name = 'StitchIfwiConfig'
+
+        if stitch_cfg_name == '':
+            print ("\nCannot identify the StitchIfwiConfig file\nPlease specify with -sc option")
+            exit(1)
+
+        sys.path.append(stitch_cfg_path)
+        stitch_cfg_module = import_module(stitch_cfg_name)
+        params_change_list = stitch_cfg_module.get_bpmgen2_params_change_list()[0]
+
+        # Copy SBL image into a Temp folder for signing
+        temp_dir = os.path.join(os.environ['WORKSPACE'], 'Outputs', self._board.BOARD_NAME, 'Temp')
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        os.makedirs(temp_dir)
+        shutil.copy (os.path.join(os.environ['WORKSPACE'], 'Outputs', self._board.BOARD_NAME, self._image),
+                     os.path.join(temp_dir, 'SlimBootloader.bin'))
+
+        # Sign the IBB segments for top swap A/B
+        output_dir  = temp_dir
+        sbl_file    = os.path.join (output_dir, 'SlimBootloader.bin')
+        out_file    = os.path.join(output_dir, "BiosRegion.bin")
+        bmpgen_params = os.path.join(output_dir, "bpmgen2.params")
+        bpm_key_dir = os.path.join (bpmgen2_dir, 'keys')
+        key_size    = '3072'
+        hash_type   = 'sha384'
+
+        # Check the required input files for signing
+        if not os.path.exists(os.path.join(bpmgen2_dir, 'bpmgen2.params')):
+            print ("\nCannot identify the bpmeng2.params file\nPlease generate it using BpmGen2GUI.exe")
+            exit(1)
+
+        if not os.path.exists(os.path.join(bpmgen2_dir, 'keys')):
+            print ("\nCannot identify the signing key files\nPlease prepare them under the keys folder:")
+            for key, value in BTG_SIGNING_KEY.items():
+                if key_size in value:
+                    print ("  -", value)
+            exit(1)
+
+        # Update the change list accordingly
+        # Note that sign_slimboot_binary() requires the key size of BPM signing key to be the same as that of KM signing key
+        for i, (key, value) in enumerate(params_change_list):
+            if key == 'BpmSigPubKey':
+                params_change_list[i] = ('BpmSigPubKey', os.path.join(bpmgen2_dir, 'keys', 'bpm_pubkey_'+key_size+'.pem'))
+            elif key == 'BpmSigPrivKey':
+                params_change_list[i] = ('BpmSigPrivKey', os.path.join(bpmgen2_dir, 'keys', 'bpm_privkey_'+key_size+'.pem'))
+            elif key == 'BpmKeySizeBits':
+                params_change_list[i] = ('BpmKeySizeBits', key_size)
+
+        # Update BpmGen2 params file
+        print ("Updating BPM GEN2 params file")
+        self.update_bpmgen2_params(params_change_list, os.path.join(bpmgen2_dir, 'bpmgen2.params'), os.path.join(output_dir, 'bpmgen2.params'))
+
+        # Sign the IBB segments for top swap A/B
+        print("Sign the IBB segments")
+        sign_slimboot_binary(sbl_file, bpmgen2_dir, bmpgen_params, bpm_key_dir, key_size, hash_type, out_file, output_dir, '')
+
+        # Copy the signed SBL image to Outputs\<BOARD_NAME>\ folder
+        shutil.copy(out_file, os.path.join(os.environ['WORKSPACE'], 'Outputs', self._board.BOARD_NAME, 'SlimBootloader_signed.bin'))
+
+        if self._board.ACM_IN_PLACE:
+            print ("ACM file is in place")
+        else:
+            print ("\nACM file is NOT in place")
+
+        print("Done with BpmGen2! (key size = %s)" % key_size)
+
+
 def main():
 
     # Set SBL_SOURCE and WORKSPACE Environment variable at first
@@ -1502,6 +1614,10 @@ def main():
                                         );
                 os.environ['PLT_SOURCE']  = os.path.abspath (os.path.join (os.path.dirname (board_cfgs[index]), '../..'))
                 Build(board).build()
+
+                if args.bpmgen2_dir != '':
+                    Build(board).sign(args.bpmgen2_dir, args.stitch_cfg_file)
+
                 break
 
     buildp = sp.add_parser('build', help='build SBL firmware')
@@ -1515,6 +1631,8 @@ def main():
     buildp.add_argument('board', metavar='board', choices=board_names, help='Board Name (%s)' % ', '.join(board_names))
     buildp.add_argument('-k', '--keygen', action='store_true', help='Generate default keys for signing')
     buildp.add_argument('-t', '--toolchain', dest='toolchain', type=str, default='', help='Perferred toolchain name')
+    buildp.add_argument('-s', '--sign', dest='bpmgen2_dir', default = '', help='Specify BpmGen2 tool path')
+    buildp.add_argument('-sc', '--stitchconfig', dest='stitch_cfg_file', default = '', help='Specify stitch config file name')
     buildp.set_defaults(func=cmd_build)
 
     def cmd_clean(args):
