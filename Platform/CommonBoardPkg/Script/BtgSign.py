@@ -245,7 +245,7 @@ def sign_slimboot_binary(infile, bpm_gen2dir, bpmgen2_params, key_dir,  key_sz, 
     swap_ts_block(os.path.join(output_dir, "sbl_sec.bin"), os.path.join(output_dir, "SwappedA.bin"), top_swap_size)
 
     print("Sign backup partition....")
-    bpm_sign_binary(os.path.join(output_dir,"SwappedA.bin"),  os.path.join(output_dir, "sbl_sec.bin"), output_dir, bpm_gen2dir, key_dir, bpmgen2_params, '3072', oem_pub_key_hash_file, 'sha384')
+    bpm_sign_binary(os.path.join(output_dir,"SwappedA.bin"),  os.path.join(output_dir, "sbl_sec.bin"), output_dir, bpm_gen2dir, key_dir, bpmgen2_params, key_sz, oem_pub_key_hash_file, hash_type)
     os.remove(os.path.join(output_dir,"SwappedA.bin"))
 
     print("Swap to original top swap block....")
