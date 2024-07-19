@@ -33,7 +33,7 @@ GPIO_CFG_DATA.GpioPinConfig1_GPP_D13.GPIOSkip_GPP_D13 | 0
 # FEATURES_CFG_DATA.Features.Tcc    | 0x1
 FEATURES_CFG_DATA.Features.NewGpioSchemeEnable      | 0x1
 # Enable S0ix by default. For EHL, only S0i2.0 is supported
-FEATURES_CFG_DATA.Features.S0ix     | 0x1
+FEATURES_CFG_DATA.Features.S0ix     | 0x0
 
 # Preserve ISI SPI Pins across ResetResume power-cycling
 GPIO_CFG_DATA.GpioPinConfig1_GPP_U04.GPIOSkip_GPP_U04 | 0x0

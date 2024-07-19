@@ -176,10 +176,27 @@ Method(\_PIC,1)
 // enter a sleep state.  The argument passed is the numeric value of
 // the Sx state.
 
+OperationRegion (GPEE, SystemIO, (ACPI_BASE_ADDRESS + R_ACPI_IO_GPE0_EN_127_96), 0x4)
+Field (GPEE, AnyAcc, NoLock, Preserve)
+{
+      , 8,
+  OSEE, 1,
+      , 7,
+  LNWE, 1,
+}
+
 Method(_PTS,1)
 {
   D8XH(0,Arg0)    // Output Sleep State to Port 80h, Byte 0.
   D8XH(1,0)       // output byte 1 = 0, sleep entry
+
+  If(LEqual(\PWOL, 1)) {
+    Store(0x1, OSEE) // set OSE_EN for PSE GbE
+    Store(0x1, LNWE) // set LANWAKE_EN for PCH GbE
+
+    \_SB.PC00.OTN0.PTS(Arg0) // set POWERSTATE and PMEEnable for PSE GbE 0
+    \_SB.PC00.OTN1.PTS(Arg0) // set POWERSTATE and PMEEnable for PSE GbE 1
+  }
 }
 
 // Platform Hook for _BCL method for Igfx.

@@ -79,7 +79,10 @@ Scope(\_SB.PC00) {
       Offset(0x10), TADL,  32,
       Offset(0x14), TADH,  32,
       Offset(0x84),
-          , 15,
+      PSTA, 2,
+          , 6,
+      PMEE, 1,
+          , 6,
       PMES, 1
     }
     Method(_PRW, 0) {
@@ -104,6 +107,17 @@ Scope(\_SB.PC00) {
     {
       Return(0x0F)
     }
+
+    Method(PTS, 1)
+    {
+      // Check if the system is transitioning to S5
+      // (S3 is probably already handled by GbE driver)
+      If (LEqual (Arg0, 0x05))
+      {
+        Store(0x3, PSTA) // set POWERSTATE to D3
+        Store(0x1, PMEE) // set PMEEnable
+      }
+    }
   }
 
   //
@@ -118,7 +132,10 @@ Scope(\_SB.PC00) {
       Offset(0x10), TADL,  32,
       Offset(0x14), TADH,  32,
       Offset(0x84),
-          , 15,
+      PSTA, 2,
+          , 6,
+      PMEE, 1,
+          , 6,
       PMES, 1
     }
     Method(_PRW, 0) {
@@ -143,6 +160,18 @@ Scope(\_SB.PC00) {
     {
       Return(0x0F)
     }
+
+    Method(PTS, 1)
+    {
+      // Check if the system is transitioning to S5
+      // (S3 is probably already handled by GbE driver)
+      If (LEqual (Arg0, 0x05))
+      {
+        Store(0x3, PSTA) // set POWERSTATE to D3
+        Store(0x1, PMEE) // set PMEEnable
+      }
+    }
+
   }
 
   //-------------------------------------------
