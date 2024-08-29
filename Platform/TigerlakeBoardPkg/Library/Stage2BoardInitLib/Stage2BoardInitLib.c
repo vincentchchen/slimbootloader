@@ -88,9 +88,10 @@
 #include <Library/PlatformHookLib.h>
 
 
-
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
 BOOLEAN mTccDsoTuning      = FALSE;
 UINT8   mTccRtd3Support    = 0;
+#endif
 
 //
 // The EC implements an embedded controller interface at ports 0x60/0x64 and a ACPI compliant
@@ -306,15 +307,19 @@ STATIC S3_SAVE_REG mS3SaveReg = {
   { { REG_TYPE_IO, WIDE32, { 0, 0}, (ACPI_BASE_ADDRESS + R_ACPI_IO_SMI_EN), 0x00000000 } }
 };
 
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
 CONST EFI_ACPI_DESCRIPTION_HEADER  mAcpiTccRtctTableTemplate = {
   EFI_ACPI_RTCT_SIGNATURE,
   sizeof (EFI_ACPI_DESCRIPTION_HEADER)
   // Other fields will be updated in runtime
 };
+#endif
 
 STATIC
 CONST EFI_ACPI_COMMON_HEADER *mPlatformAcpiTables[] = {
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   (EFI_ACPI_COMMON_HEADER *)&mAcpiTccRtctTableTemplate,
+#endif
   NULL
 };
 
@@ -1067,6 +1072,7 @@ FspUpdatePcieRpPolicy (
   FspsUpd->FspsConfig.PcieRpFunctionSwap = 0x1;
 }
 
+#if FeaturePcdGet(PcdTccEnabled)
 /**
   Update FSP-S UPD config data for TCC mode and tuning
 
@@ -1081,6 +1087,7 @@ TccModePostMemConfig (
   FSPS_UPD  *FspsUpd
 )
 {
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   UINT32                                    *TccCacheconfigBase;
   UINT32                                     TccCacheconfigSize;
   UINT32                                    *TccCrlBase;
@@ -1099,6 +1106,7 @@ TccModePostMemConfig (
   if ((TccCfgData == NULL) || ((TccCfgData->TccEnable == 0) && (TccCfgData->TccTuning == 0))) {
     return EFI_NOT_FOUND;
   }
+#endif
 
   DEBUG ((DEBUG_INFO, "Set TCC silicon:\n"));
 
@@ -1130,10 +1138,11 @@ TccModePostMemConfig (
     FspsUpd->FspsConfig.CpuPcieRpMultiVcEnabled[Index] = 1;
   }
 
+  FspsUpd->FspsConfig.IfuEnable       = 0;
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   FspsUpd->FspsConfig.SoftwareSramEn  = TccCfgData->TccSoftSram;
   FspsUpd->FspsConfig.DsoTuningEn     = TccCfgData->TccTuning;
   FspsUpd->FspsConfig.TccErrorLogEn   = TccCfgData->TccErrorLog;
-  FspsUpd->FspsConfig.IfuEnable       = 0;
 
   if (!IsWdtFlagsSet(WDT_FLAG_TCC_DSO_IN_PROGRESS)) {
     //
@@ -1210,8 +1219,11 @@ TccModePostMemConfig (
   }
 
   return Status;
+#else
+  return EFI_SUCCESS;
+#endif
 }
-
+#endif
 
 /**
   Update FSP-S UPD config data
@@ -1560,9 +1572,9 @@ UpdateFspConfig (
     CopyMem (FspsConfig->PtmEnabled, SiCfgData->TcssPcieRootPortPtmEn, sizeof(SiCfgData->TcssPcieRootPortPtmEn));
   }
 
-  if (FeaturePcdGet (PcdTccEnabled)) {
+#if FeaturePcdGet(PcdTccEnabled)
     Status = TccModePostMemConfig (FspsUpd);
-  }
+#endif
 
   if (GetBootMode() == BOOT_ON_FLASH_UPDATE) {
     FspsUpd->FspsConfig.SiSkipBiosDoneWhenFwUpdate = TRUE;
@@ -2115,7 +2127,9 @@ PlatformUpdateAcpiTable (
   UINT16                       Size;
   EFI_STATUS                   Status;
   PLATFORM_DATA               *PlatformData;
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   TCC_CFG_DATA                *TccCfgData;
+#endif
   SILICON_CFG_DATA            *SiCfgData;
   MEMORY_CFG_DATA             *MemCfgData;
   UINTN                       DmarTableFlags;
@@ -2180,6 +2194,7 @@ PlatformUpdateAcpiTable (
     if (GetBootMode() != BOOT_ON_FLASH_UPDATE) {
       AcpiPatchPss (Table, GlobalNvs);
     }
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   } else if (Table->Signature == SIGNATURE_32 ('R', 'T', 'C', 'T')) {
     DEBUG ((DEBUG_INFO, "Find RTCT table\n"));
 
@@ -2192,6 +2207,7 @@ PlatformUpdateAcpiTable (
       }
     }
     return EFI_UNSUPPORTED;
+#endif
   } else if (Table->Signature == EFI_BDAT_TABLE_SIGNATURE) {
     FspHobList = GetFspHobListPtr ();
     if (FspHobList != NULL) {
@@ -2977,9 +2993,11 @@ PlatformUpdateAcpiGnvs (
 
   SocUpdateAcpiGnvs ((VOID *)GnvsIn);
 
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   // If TCC is enabled, use the TCC policy from subregion
   if (mTccDsoTuning) {
     PlatformNvs->Rtd3Support     = mTccRtd3Support;
   }
+#endif
 }
 

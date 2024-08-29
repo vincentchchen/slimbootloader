@@ -369,9 +369,11 @@ TccModePostMemConfig (
 
   FspsUpd->FspsConfig.IfuEnable       = 0;
   FspsUpd->FspsConfig.TccMode = 1;
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   FspsUpd->FspsConfig.SoftwareSramEn  = 0;
   FspsUpd->FspsConfig.DsoTuningEn     = 0;
   FspsUpd->FspsConfig.TccErrorLogEn   = 0;
+#endif
 
   return EFI_SUCCESS;
 }

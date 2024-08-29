@@ -340,7 +340,7 @@ TccModePostMemConfig (
   UINT8                                      MaxPchPcieRootPorts;
   UINT8                                      MaxCpuPciePorts;
 
-#if FixedPcdGet8(PcdAdlNSupport) == 0
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   UINT32                                    *TccCacheConfigBase;
   UINT32                                     TccCacheConfigSize;
   UINT32                                    *TccCrlBase;
@@ -397,7 +397,7 @@ TccModePostMemConfig (
   FspsUpd->FspsConfig.IfuEnable = 0;
   FspsUpd->FspsConfig.TccMode = 1;
 
-#if FixedPcdGet8(PcdAdlNSupport) == 0
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   FspsUpd->FspsConfig.SoftwareSramEn  = TccCfgData->TccSoftSram;
   FspsUpd->FspsConfig.DsoTuningEn     = TccCfgData->TccTuning;
   FspsUpd->FspsConfig.TccErrorLogEn   = TccCfgData->TccErrorLog;

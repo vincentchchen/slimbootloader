@@ -985,10 +985,12 @@ PlatformUpdateAcpiGnvs (
   SocUpdateAcpiGnvs ((VOID *)GnvsIn);
 
   PlatformNvs->Rtd3Support = PchSciSupported? 0 : 1;
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   // If TCC is enabled, use the TCC policy from subregion
   if (mTccDsoTuning) {
     PlatformNvs->Rtd3Support     = mTccRtd3Support;
   }
+#endif
 
   PlatformNvs->LowPowerS0Idle = S0IX_STATUS();
   DEBUG((DEBUG_INFO, "PlatformNvs->S0ix = 0x%x\n ", PlatformNvs->LowPowerS0Idle));

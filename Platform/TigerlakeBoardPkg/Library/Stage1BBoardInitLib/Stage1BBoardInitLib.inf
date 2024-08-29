@@ -63,6 +63,7 @@
   gPlatformCommonLibTokenSpaceGuid.PcdMeasuredBootEnabled
   gPlatformModuleTokenSpaceGuid.PcdFastBootEnabled
   gPlatformCommonLibTokenSpaceGuid.PcdTccEnabled
+  gPlatformCommonLibTokenSpaceGuid.PcdTccToolsSupportEnabled
   gPlatformModuleTokenSpaceGuid.PcdStage1StackBaseOffset
   gPlatformModuleTokenSpaceGuid.PcdStage1StackSize
   gPlatformModuleTokenSpaceGuid.PcdStage1DataSize

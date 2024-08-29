@@ -82,8 +82,10 @@
 #include <Library/PlatformHookLib.h>
 #include <Library/ResetSystemLib.h>
 
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
 BOOLEAN mTccDsoTuning      = FALSE;
 UINT8   mTccRtd3Support    = 0;
+#endif
 
 //
 // GPIO_PAD Fileds
@@ -219,15 +221,19 @@ SI_PCH_DEVICE_INTERRUPT_CONFIG mPchDevIntConfig[] = {
 
 STATIC UINT8 mPchSciSupported = 0xFF;
 
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
 CONST EFI_ACPI_DESCRIPTION_HEADER  mAcpiTccRtctTableTemplate = {
   EFI_ACPI_RTCT_SIGNATURE,
   sizeof (EFI_ACPI_DESCRIPTION_HEADER)
   // Other fields will be updated in runtime
 };
+#endif
 
 STATIC
 CONST EFI_ACPI_COMMON_HEADER *mPlatformAcpiTables[] = {
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   (EFI_ACPI_COMMON_HEADER *)&mAcpiTccRtctTableTemplate,
+#endif
   NULL
 };
 
@@ -863,6 +869,7 @@ BoardInit (
   }
 }
 
+#if FeaturePcdGet(PcdTccEnabled)
 /**
   Update FSP-S UPD config data for TCC mode and tuning
 
@@ -877,6 +884,7 @@ TccModePostMemConfig (
   FSPS_UPD  *FspsUpd
 )
 {
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   UINT32                                    *TccCacheconfigBase;
   UINT32                                     TccCacheconfigSize;
   UINT32                                    *TccCrlBase;
@@ -894,6 +902,7 @@ TccModePostMemConfig (
   if ((TccCfgData == NULL) || ((TccCfgData->TccEnable == 0) && (TccCfgData->TccTuning == 0))) {
     return EFI_NOT_FOUND;
   }
+#endif
 
   DEBUG ((DEBUG_INFO, "Set TCC silicon:\n"));
 
@@ -925,10 +934,11 @@ TccModePostMemConfig (
     }
   }
 
+  FspsUpd->FspsConfig.IfuEnable       = 0;
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   FspsUpd->FspsConfig.SoftwareSramEn  = TccCfgData->TccSoftSram;
   FspsUpd->FspsConfig.DsoTuningEn     = TccCfgData->TccTuning;
   FspsUpd->FspsConfig.TccErrorLogEn   = TccCfgData->TccErrorLog;
-  FspsUpd->FspsConfig.IfuEnable       = 0;
   if (!IsWdtFlagsSet(WDT_FLAG_TCC_DSO_IN_PROGRESS)) {
     //
     // If FSPM doesn't enable TCC DSO timer, FSPS should also skip TCC DSO.
@@ -973,6 +983,7 @@ TccModePostMemConfig (
       }
     }
   }
+#endif
 
   // Print configured TCC stream settings
   DEBUG ((DEBUG_INFO, "TCC Stage 2 parameters configuration details:\n"));
@@ -991,6 +1002,7 @@ TccModePostMemConfig (
   DEBUG ((DEBUG_INFO, "PcieRpL1Substates     = %x\n", FspsUpd->FspsConfig.PcieRpL1Substates[0]   ));
   DEBUG ((DEBUG_INFO, "Rtd3Support           = %x\n", mTccRtd3Support                            ));
 
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   // Load TCC cache config binary from container
   TccCacheconfigBase = NULL;
   TccCacheconfigSize = 0;
@@ -1018,7 +1030,11 @@ TccModePostMemConfig (
   }
 
   return Status;
+#else
+  return EFI_SUCCESS;
+#endif
 }
+#endif
 
 /**
   Update PSE policies.
@@ -1916,9 +1932,9 @@ UpdateFspConfig (
     DEBUG ((DEBUG_INFO, "Fusa FSP UPD settings updated.........Done\n"));
   }
 
-  if (FeaturePcdGet (PcdTccEnabled)) {
-    TccModePostMemConfig (FspsUpd);
-  }
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
+  TccModePostMemConfig (FspsUpd);
+#endif
 
   if (GetBootMode () == BOOT_ON_FLASH_UPDATE) {
     Fspscfg->PchLockDownBiosInterface = FALSE;

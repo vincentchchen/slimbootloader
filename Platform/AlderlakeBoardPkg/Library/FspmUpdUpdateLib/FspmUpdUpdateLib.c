@@ -59,7 +59,7 @@ GetCpuStepping(
   return ((CPU_STEPPING) (Eax.Uint32 & CPUID_FULL_STEPPING));
 }
 
-#if FixedPcdGet8 (PcdTccEnabled)
+#if FeaturePcdGet(PcdTccEnabled)
 /**
   Update FSP-M UPD config data for TCC mode and tuning
 
@@ -77,7 +77,7 @@ TccModePreMemConfig (
 
   FEATURES_CFG_DATA                     *FeaturesCfgData;
 
-#if (FixedPcdGet8(PcdAdlNSupport) == 0) && !defined(PLATFORM_RPLP)
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   UINT32                                *TccCacheBase;
   UINT32                                 TccCacheSize;
   UINT32                                *TccStreamBase;
@@ -110,7 +110,7 @@ TccModePreMemConfig (
   FspmUpd->FspmConfig.HyperThreading         = 0;
   FspmUpd->FspmConfig.DisableStarv2medPrioOnNewReq = 1;
 
-#if (FixedPcdGet8(PcdAdlNSupport) == 0) && !defined(PLATFORM_RPLP)
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   FspmUpd->FspmConfig.SoftwareSramEnPreMem   = TccCfgData->TccSoftSram;
   FspmUpd->FspmConfig.DsoTuningEnPreMem      = TccCfgData->TccTuning;
   FspmUpd->FspmConfig.TccErrorLogEnPreMem    = TccCfgData->TccErrorLog;
@@ -129,7 +129,7 @@ TccModePreMemConfig (
     }
   }
 
-#if (FixedPcdGet8(PcdAdlNSupport) == 0) && !defined(PLATFORM_RPLP)
+#if FeaturePcdGet(PcdTccToolsSupportEnabled)
   if (IsMarkedBadDso ()) {
     DEBUG ((DEBUG_ERROR, "Incorrect TCC tuning parameters. Platform rebooted with default values.\n"));
     FspmUpd->FspmConfig.TccStreamCfgStatusPreMem = 1;
@@ -683,7 +683,7 @@ UpdateFspConfig (
   }
 
   // Tcc enabling
-#if FixedPcdGet8 (PcdTccEnabled)
+#if FeaturePcdGet(PcdTccEnabled)
   Fspmcfg->WdtDisableAndLock = 0x0;
   TccModePreMemConfig (FspmUpd);
 #endif

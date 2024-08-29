@@ -86,7 +86,7 @@ def get_component_replace_list(plt_params_list):
             replace_list.append (
                 ('IFWI/BIOS/NRD/IPFW/TMAC', 'IPFW/TsnSubRegion.bin',     'lz4',     'KEY_ID_CONTAINER_COMP_RSA3072', 0),   # TSN MAC Address
             )
-    if 'tcc' in plt_params_list:
+    if 'tcc_tool' in plt_params_list:
       if os.path.exists('IPFW/TccCrlBinary.bin'):
           print ("TccCrlBinary.bin found")
           replace_list.append (
@@ -112,7 +112,7 @@ def check_parameter(para_list):
         'quad'   : {},
         'debug'  : {},
         'tsn'    : {'0G1G', '0G25G', '1G0G', '25G0G', '1G1G', '1G25G', '25G1G', '25G25G'},
-        'tcc'     : {}
+        'tcc'    : {}
         }
 
     para_help = \

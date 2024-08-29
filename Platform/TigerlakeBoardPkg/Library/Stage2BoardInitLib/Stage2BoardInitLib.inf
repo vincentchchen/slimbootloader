@@ -109,6 +109,7 @@
   gPlatformTigerLakeTokenSpaceGuid.PcdFusaEnabled
   gPlatformModuleTokenSpaceGuid.PcdFspsUpdPtr
   gPlatformCommonLibTokenSpaceGuid.PcdTccEnabled
+  gPlatformCommonLibTokenSpaceGuid.PcdTccToolsSupportEnabled
   gPlatformModuleTokenSpaceGuid.PcdAcpiTableTemplatePtr
   gPlatformModuleTokenSpaceGuid.PcdEnableDts
   gPlatformModuleTokenSpaceGuid.PcdEnablePciePm

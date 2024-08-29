@@ -102,6 +102,7 @@
   gPlatformModuleTokenSpaceGuid.PcdSmbiosTablesBase
   gPlatformModuleTokenSpaceGuid.PcdSmbiosEnabled
   gPlatformCommonLibTokenSpaceGuid.PcdTccEnabled
+  gPlatformCommonLibTokenSpaceGuid.PcdTccToolsSupportEnabled
   gPlatformModuleTokenSpaceGuid.PcdAcpiTableTemplatePtr
   gPlatformModuleTokenSpaceGuid.PcdFspsUpdPtr
   gPlatformCommonLibTokenSpaceGuid.PcdFspNoEop

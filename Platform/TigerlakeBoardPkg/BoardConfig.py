@@ -171,7 +171,8 @@ class Board(BaseBoard):
 
         self.SIIPFW_SIZE = 0x1000
         self.ENABLE_TCC  = 0
-        if self.ENABLE_TCC:
+        self.ENABLE_TCC_TOOLS = 0
+        if self.ENABLE_TCC_TOOLS:
             self.TCC_CCFG_SIZE   = 0x00001000
             self.TCC_CRL_SIZE    = 0x00008000
             self.TCC_STREAM_SIZE = 0x00005000
@@ -258,7 +259,7 @@ class Board(BaseBoard):
                 lines         = open (cfg_dlt_file).read()
 
                 # Enable TCC in dlt file
-                if self.ENABLE_TCC:
+                if self.ENABLE_TCC_TOOLS:
                     lines += open (os.path.join(brd_cfg_src_dir, 'CfgData_Tcc_Feature.dlt')).read()
 
                 # Enable TSN in dlt file
@@ -363,7 +364,7 @@ class Board(BaseBoard):
         CompFileCrlFw='crl.bin' if os.path.exists(os.path.join(bins, 'crl.bin')) else ''
         CompFilePreOsChecker='PreOsChecker.bin' if os.path.exists(os.path.join(bins, 'PreOsChecker.bin')) else ''
 
-        if self.ENABLE_TCC:
+        if self.ENABLE_TCC_TOOLS:
             container_list.append (
               ('TCCC', '',     'Lz4',   container_list_auth_type,   'KEY_ID_CONTAINER_COMP'+'_'+self._RSA_SIGN_TYPE,    0,   self.TCC_CCFG_SIZE,  0),   # TCC Cache Config
             )

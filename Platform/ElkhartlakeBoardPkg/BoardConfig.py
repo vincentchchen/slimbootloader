@@ -69,11 +69,12 @@ class Board(BaseBoard):
         self.SIIPFW_SIZE += self.CHIPSET_SIZE
 
         self.ENABLE_TCC         = 0
+        self.ENABLE_TCC_TOOLS   = 0
         # TSN manual configuration- If enabled, user will be able to have more refined control over TSN configuration via
         # PseTsnIpConfig, TsnConfig and TsnMacAddr binaries
         self.ENABLE_TSN         = 0
 
-        if self.ENABLE_TCC:
+        if self.ENABLE_TCC_TOOLS:
             self.TCC_CCFG_SIZE   = 0x00001000
             self.TCC_CRL_SIZE    = 0x00008000
             self.TCC_STREAM_SIZE = 0x00005000
@@ -223,7 +224,7 @@ class Board(BaseBoard):
                 lines         = open (cfg_dlt_file).read()
 
                 # Enable TCC in dlt file
-                if self.ENABLE_TCC:
+                if self.ENABLE_TCC_TOOLS:
                     lines += open (os.path.join(brd_cfg_src_dir, 'CfgData_Tcc_Feature.dlt')).read()
 
                 # Write to generated final dlt file
@@ -321,7 +322,7 @@ class Board(BaseBoard):
             ('CHIP', CompFileChipInitFw,     '',   container_list_auth_type,   'KEY_ID_CONTAINER_COMP'+'_'+self._RSA_SIGN_TYPE,    0,   self.CHIPSET_SIZE,  0),
         )
 
-        if self.ENABLE_TCC:
+        if self.ENABLE_TCC_TOOLS:
             container_list.append (
               ('TCCC', '',     'Lz4',   container_list_auth_type,   'KEY_ID_CONTAINER_COMP'+'_'+self._RSA_SIGN_TYPE,    0,   self.TCC_CCFG_SIZE,  0),   # TCC Cache Config
             )

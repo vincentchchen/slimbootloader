@@ -60,3 +60,4 @@
   gPlatformModuleTokenSpaceGuid.PcdAcpiEnabled
   gPlatformModuleTokenSpaceGuid.PcdVtdEnabled
   gPlatformCommonLibTokenSpaceGuid.PcdTccEnabled
+  gPlatformCommonLibTokenSpaceGuid.PcdTccToolsSupportEnabled
