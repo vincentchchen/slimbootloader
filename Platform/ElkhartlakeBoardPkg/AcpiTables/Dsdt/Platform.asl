@@ -176,10 +176,47 @@ Method(\_PIC,1)
 // enter a sleep state.  The argument passed is the numeric value of
 // the Sx state.
 
+OperationRegion(APMC, SystemIO, 0xB2, 0x1)
+Field(APMC,ByteAcc,NoLock,Preserve)
+{
+  SSMI, 8
+}
+
+OperationRegion (SMIC, SystemIO, (ACPI_BASE_ADDRESS + R_ACPI_IO_SMI_EN), 0x4)
+Field (SMIC, AnyAcc, NoLock, Preserve)
+{
+      , 4,
+  SLPE, 1,
+  APME, 1,
+}
+
+OperationRegion (SMIS, SystemIO, (ACPI_BASE_ADDRESS + R_ACPI_IO_SMI_STS), 0x4)
+Field (SMIC, AnyAcc, NoLock, Preserve)
+{
+      , 4,
+  SLPS, 1,
+  APMS, 1,
+}
+
 Method(_PTS,1)
 {
   D8XH(0,Arg0)    // Output Sleep State to Port 80h, Byte 0.
   D8XH(1,0)       // output byte 1 = 0, sleep entry
+
+  If(LEqual(\PWOL, 1)) {
+    // Below are two methods to enable WOL support by means of SMI handler of UEFI payload
+    // (1) SMI on APM_CNT (Note that the FADT hack is still needed)
+    // clear APM_STS and enable SMI on APM_CNT IO register
+//    Store(0x1, APMS)
+//    Store(0x1, APME)
+    // trigger a SW SMI by writing to APM_CNT IO register
+//    Store(0xA, SSMI)
+
+    // (2) SMI on SLP_EN
+    // clear SMI_ON_SLP_EN_STS and enable SMI on SLP_EN bit
+    Store(0x1, SLPS)
+    Store(0x1, SLPE)
+  }
 }
 
 // Platform Hook for _BCL method for Igfx.

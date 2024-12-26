@@ -169,6 +169,7 @@
 //
 // Number of bytes decoded by GPE0 block
 //
+//#define EFI_ACPI_GPE0_BLK_LEN 0x1C // for SMI on APM_CNT, hacked to prevent OS from accessing ACPI IO register 0x7C GPE0_EN_127_96
 #define EFI_ACPI_GPE0_BLK_LEN 0x20
 
 //

@@ -72,7 +72,7 @@ class Board(BaseBoard):
 
         # TSN manual configuration- If enabled, user will be able to have more refined control over TSN configuration via
         # PseTsnIpConfig, TsnConfig and TsnMacAddr binaries
-        self.ENABLE_TSN         = 0
+        self.ENABLE_TSN         = 1
 
         self.ENABLE_PRE_OS_CHECKER = 1
         if self.ENABLE_PRE_OS_CHECKER:

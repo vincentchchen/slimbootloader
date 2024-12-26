@@ -984,6 +984,10 @@ PlatformUpdateAcpiGnvs (
   PlatformNvs->PpmFlags                         = CpuNvs->PpmFlags;
   SocUpdateAcpiGnvs ((VOID *)GnvsIn);
 
+  // set ACPI \PWOL
+  // this may not be necessary, but simply used as a WOL switch in ACPI
+  PlatformNvs->PseWolServiceEnable = 1;
+
   PlatformNvs->Rtd3Support = PchSciSupported? 0 : 1;
 
   PlatformNvs->LowPowerS0Idle = S0IX_STATUS();
