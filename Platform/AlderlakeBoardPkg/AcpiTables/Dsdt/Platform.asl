@@ -130,6 +130,70 @@ Method(P8XH,2,Serialized)
 
 
 //
+// [ACPI] platform:InternalOnlyBegin
+//
+//
+// Writes debug output to serial port
+//
+
+// Legacy UART: IO 0x3F8 redirected to eSPI
+OperationRegion (U3F8, SystemIO, 0x3F8, 0x10)
+Field (U3F8, ByteAcc, Lock, Preserve) {
+  LTHR, 8, // THR, DLL
+  LDLM, 8, // IER, DLM
+  LFCR, 8, // ISR, FCR
+  LLCR, 8,
+}
+
+// PCIe UART: B0:D30:F0 MMIO base after PCIe enumeration
+OperationRegion (UPCI, SystemMemory, 0x82346000, 0x10)
+Field (UPCI, ByteAcc, Lock, Preserve) {
+  PTHR, 32, // THR, DLL
+  PDLM, 32, // IER, DLM
+  PFCR, 32, // ISR, FCR
+  PLCR, 32,
+}
+
+Method(SDBG,1,Serialized)
+{
+    // Init Legacy UART
+    //Store(0x83, LLCR) // Enable DLL, DLM
+    //Store(0x01, LTHR) // Set divisor=1, which means baud rate 115200
+    //Store(0x00, LDLM)
+    //Store(0xC1, LFCR) // Enable FIFO, 64 bytes
+    //Store(0x03, LLCR) // 8 bits, 1 stop bit, no parity
+    //Store(0x00, LDLM) // Disable Interrupts
+
+    // Init PCIe UART
+    //Store(0x83, PLCR) // Enable DLL, DLM
+    //Store(0x01, PTHR) // Set divisor=1, which means baud rate 115200
+    //Store(0x00, PDLM)
+    //Store(0xC1, PFCR) // Enable FIFO, 64 bytes
+    //Store(0x03, PLCR) // 8 bits, 1 stop bit, no parity
+    //Store(0x00, PDLM) // Disable Interrupts
+
+    //Local3=buffer, Local4=size, Local5=iterator
+    ToHexString (Arg0, Local3) // convert argument to Hexadecimal String in case it isn't a string already. If it is, nothing happens.
+    Store(Sizeof(Local3), Local4)
+
+    Store(0, Local5)
+    While (LLess(Local5, Local4)) {
+      Mid(Local3,Local5,1,LTHR) // Store() doesn't work. Mid() does. Not sure what's the difference
+      Mid(Local3,Local5,1,PTHR)
+      Stall(100)
+      Increment(Local5)
+    }
+    Stall(100);Store(0xD, LTHR)
+    Stall(100);Store(0xA, LTHR)
+    Stall(100);Store(0xD, PTHR)
+    Stall(100);Store(0xA, PTHR)
+}
+//
+// [ACPI] platform:InternalOnlyEnd
+//
+
+
+//
 // Define SW SMI port as an ACPI Operating Region to use for generate SW SMI.
 //
 OperationRegion(SPRT,SystemIO, 0xB2,2)
@@ -169,6 +233,7 @@ Method(_PTS,1)
   D8XH(0,Arg0)    // Output Sleep State to Port 80h, Byte 0.
   D8XH(1,0)       // output byte 1 = 0, sleep entry
 
+  ADBG(Concatenate("_PTS=",ToHexString(Arg0)))
 
   // If code is executed, Wake from RI# via Serial Modem will be
   // enabled.  If code is not executed, COM Port Debugging throughout

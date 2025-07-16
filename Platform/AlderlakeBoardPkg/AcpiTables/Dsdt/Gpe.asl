@@ -82,6 +82,7 @@ Scope(\_GPE)
   //
   Method(_L66)
   {
+    ADBG("L66 Event")
     SL66 ()
   }
 
@@ -145,6 +146,7 @@ Scope(\_GPE)
   Name(PRES, 1) // keep last PCH PwrBtn status, 0=press, 1=release
   Method(_L6F) // 2-tier GPE event handler
   {
+    ADBG("L6F Event")
     If (CondRefOf(\_GPE.AL6F))
     {
        \_GPE.AL6F()        // call handler from RTD3 table
