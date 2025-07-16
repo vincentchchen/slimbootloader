@@ -6,6 +6,7 @@
 **/
 
 #include "Stage2.h"
+#include <Library/PlatformHookLib.h>
 
 /**
   Callback function to add performance measure point during component loading.
@@ -487,6 +488,7 @@ SecStartup (
   // Call FspSiliconInit
   BoardInit (PreSiliconInit);
 
+  DEBUG ((DEBUG_ERROR, "PreSiliconInit GetSerialPortBase = %lx\n", GetSerialPortBase()));
   AddMeasurePoint (0x3010);
 
   // Save NVS data
@@ -522,6 +524,7 @@ SecStartup (
   }
 
   BoardInit (PostSiliconInit);
+  DEBUG ((DEBUG_ERROR, "PostSiliconInit GetSerialPortBase = %lx\n", GetSerialPortBase()));
   AddMeasurePoint (0x3040);
 
 #if FixedPcdGetBool (PcdEnableCryptoPerfTest)
@@ -613,6 +616,7 @@ SecStartup (
 
   // PCI Enumeration
   BoardInit (PrePciEnumeration);
+  DEBUG ((DEBUG_ERROR, "PrePciEnumeration GetSerialPortBase = %lx\n", GetSerialPortBase()));
   AddMeasurePoint (0x3090);
 
   if (FixedPcdGetBool (PcdPciEnumEnabled)) {
@@ -622,6 +626,7 @@ SecStartup (
     AddMeasurePoint (0x30A0);
     UpdateGraphicsHob ();
     BoardInit (PostPciEnumeration);
+    DEBUG ((DEBUG_ERROR, "PostPciEnumeration GetSerialPortBase = %lx\n", GetSerialPortBase()));
     AddMeasurePoint (0x30B0);
 
     if (!EFI_ERROR (Status)) {

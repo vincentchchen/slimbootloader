@@ -88,6 +88,11 @@ SerialPortWriteRegister (
   )
 {
   UINTN  Base;
+  UINTN  LegacyBase;
+  UINTN  LegacyOffset;
+
+  LegacyBase = 0x3F8;
+  LegacyOffset = Offset;
 
   Base   = (UINTN) GetSerialPortBase ();
   Offset = GetSerialPortStrideSize () * Offset;
@@ -95,6 +100,8 @@ SerialPortWriteRegister (
     if (Base < 0x10000) {
       IoWrite8 (Base + Offset, Value);
     } else {
+      // write to legacy UART port as well
+      IoWrite8 (LegacyBase + LegacyOffset, Value);
       MmioWrite8 (Base + Offset, Value);
     }
   }

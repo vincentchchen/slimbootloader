@@ -121,10 +121,42 @@ LegacySerialPortInitialize (
   PciWrite16 (eSPIBaseAddr + R_LPC_CFG_IOD, Data16);
 
   Data16 = PciRead16 (eSPIBaseAddr + R_LPC_CFG_IOE);
+  Data16 |= B_LPC_CFG_IOE_ME2; // enable decoding of I/O locations 4Eh and 4Fh
   Data16 |= B_LPC_CFG_IOE_CBE;
   Data16 |= B_LPC_CFG_IOE_CAE;
   MmioWrite16 (PCH_PCR_ADDRESS (PID_DMI, R_PCH_DMI_PCR_LPCIOE), Data16);
   PciWrite16 (eSPIBaseAddr + R_LPC_CFG_IOE, Data16);
+
+  // Enter Config Mode
+  IoWrite8 (0x4E, 0x87);
+  IoWrite8 (0x4E, 0x01);
+  IoWrite8 (0x4E, 0x55);
+  IoWrite8 (0x4E, 0xAA);
+  IoWrite8 (0x4E, 0x20);
+
+  // Com1 Logical Device Number select
+  IoWrite8 (0x4E, 0x007);
+  IoWrite8 (0x4F, 0x01);
+
+  // Serial Port 1 Base Address MSB Register
+  IoWrite8 (0x4E, 0x061);
+  IoWrite8 (0x4F, 0xF8);
+
+  // Serial Port 1 Base Address LSB Register
+  IoWrite8 (0x4E, 0x060);
+  IoWrite8 (0x4F, 0x03);
+
+  // Change to Shared IRQ
+  IoWrite8 (0x4E, 0x0F0);
+  IoWrite8 (0x4F, 0x01);
+
+  // Serial Port 1 Activate
+  IoWrite8 (0x4E, 0x030);
+  IoWrite8 (0x4F, 0x01);
+
+  // Exit Config Mode
+  IoWrite8 (0x4E, 0x02);
+  IoWrite8 (0x4F, 0x02);
 
   return RETURN_SUCCESS;
 }
@@ -162,5 +194,8 @@ PlatformHookSerialPortInitialize (
          (V_SERIAL_IO_MEM_PPR_CLK_M_DIV << 1) | B_SERIAL_IO_MEM_PPR_CLK_EN )
         );
   }
+
+  LegacySerialPortInitialize ();
+
   return RETURN_SUCCESS;
 }
