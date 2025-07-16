@@ -820,7 +820,7 @@ Scope(\)
   //
   Method(ADBG,1,Serialized)
   {
-    //SDBG(Arg0)
+    SDBG(Arg0)
     Return(0)
   }
 }

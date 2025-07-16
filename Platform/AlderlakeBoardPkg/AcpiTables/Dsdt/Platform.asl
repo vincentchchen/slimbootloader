@@ -129,6 +129,78 @@ Method(P8XH,2,Serialized)
 }
 
 
+// Writes debug output to serial port (legacy UART and PCIe UART)
+Method(SDBG,1,Serialized)
+{
+  // Legacy UART: IO 0x3F8 redirected to eSPI
+  OperationRegion (U3F8, SystemIO, 0x3F8, 0x10)
+  Field (U3F8, ByteAcc, Lock, Preserve) {
+    LTHR, 8, // THR, DLL
+    LDLM, 8, // IER, DLM
+    LFCR, 8, // ISR, FCR
+    LLCR, 8,
+  }
+
+  // PCH UART0: B0:D30:F0
+  // PCIEXBAR => 0xC0000000
+  // Base address of PCIe configuration space => 0xC00F0000
+  OperationRegion (URT0, SystemMemory, 0xC00F0000, 0x100)
+  Field (URT0, ByteAcc, Lock, Preserve) {
+    Offset (0x10), // BAR
+    BARL, 32,
+    BARH, 32,
+  }
+
+  If (((BARL & 0x6) >> 1) == 0x2) {
+    // 64-bit address range
+    Local0 = (BARH << 32) | (BARL & 0xFFFFF000)
+  } Else {
+    Local0 = BARL & 0xFFFFF000
+  }
+
+  // PCH UART0: B0:D30:F0 MMIO registers
+  OperationRegion (U0MM, SystemMemory, Local0, 0x10)
+  Field (U0MM, ByteAcc, Lock, Preserve) {
+    PTHR, 32, // THR, DLL
+    PDLM, 32, // IER, DLM
+    PFCR, 32, // ISR, FCR
+    PLCR, 32,
+  }
+
+
+  // Init Legacy UART (assume it's already initialized in platform code)
+  //Store(0x83, LLCR) // Enable DLL, DLM
+  //Store(0x01, LTHR) // Set divisor=1, which means baud rate 115200
+  //Store(0x00, LDLM)
+  //Store(0xC1, LFCR) // Enable FIFO, 64 bytes
+  //Store(0x03, LLCR) // 8 bits, 1 stop bit, no parity
+  //Store(0x00, LDLM) // Disable Interrupts
+
+  // Init PCH UART (assume it's already initialized in platform code)
+  //Store(0x83, PLCR) // Enable DLL, DLM
+  //Store(0x01, PTHR) // Set divisor=1, which means baud rate 115200
+  //Store(0x00, PDLM)
+  //Store(0xC1, PFCR) // Enable FIFO, 64 bytes
+  //Store(0x03, PLCR) // 8 bits, 1 stop bit, no parity
+  //Store(0x00, PDLM) // Disable Interrupts
+
+  //Local3=buffer, Local4=size, Local5=iterator
+  ToHexString (Arg0, Local3) // convert argument to Hexadecimal String in case it isn't a string already. If it is, nothing happens.
+  Store (Sizeof (Local3), Local4)
+
+  Store(0, Local5)
+  While (LLess (Local5, Local4)) {
+    Mid (Local3, Local5, 1, LTHR) // Store() doesn't work. Mid() does. Not sure what's the difference
+    Mid (Local3, Local5, 1, PTHR)
+    Stall (100)
+    Increment (Local5)
+  }
+  Stall (100); Store (0xD, LTHR)
+  Stall (100); Store (0xA, LTHR)
+  Stall (100); Store (0xD, PTHR)
+  Stall (100); Store (0xA, PTHR)
+}
+
 //
 // Define SW SMI port as an ACPI Operating Region to use for generate SW SMI.
 //
@@ -169,6 +241,7 @@ Method(_PTS,1)
   D8XH(0,Arg0)    // Output Sleep State to Port 80h, Byte 0.
   D8XH(1,0)       // output byte 1 = 0, sleep entry
 
+  ADBG(Concatenate("_PTS=",ToHexString(Arg0)))
 
   // If code is executed, Wake from RI# via Serial Modem will be
   // enabled.  If code is not executed, COM Port Debugging throughout
