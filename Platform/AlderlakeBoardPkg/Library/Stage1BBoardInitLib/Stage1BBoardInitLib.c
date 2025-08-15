@@ -794,6 +794,9 @@ DEBUG_CODE_END();
       break;
     case PLATFORM_ID_ADL_N_DDR5_CRB:
       ConfigureGpio (CDATA_NO_TAG, sizeof (mGpioTablePreMemAdlNDdr5Crb) / sizeof (mGpioTablePreMemAdlNDdr5Crb[0]), (UINT8*)mGpioTablePreMemAdlNDdr5Crb);
+      MaxLedInit ();
+      DisplayPostCode (0x1234);
+      //CpuHalt ("PostCode 1234");
       break;
     case PLATFORM_ID_ADL_N_LPDDR5_RVP:
     case PLATFORM_ID_ADL_N_UP7EN50:
@@ -830,6 +833,9 @@ DEBUG_CODE_END();
     break;
   case PostMemoryInit:
     UpdateMemoryInfo ();
+    DisplayPostCode (0x4321);
+    //CpuHalt ("PostCode 4321");
+
     break;
   case PreTempRamExit:
     break;
