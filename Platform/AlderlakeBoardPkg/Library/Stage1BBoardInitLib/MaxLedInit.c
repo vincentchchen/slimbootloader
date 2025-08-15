@@ -9,6 +9,7 @@
 #include <Library/PcdLib.h>
 #include <Library/PchPciBdfLib.h>
 #include <Library/SerialIoI2cLib.h>
+#include <Library/BaseSerialIoI2cLib/SerialIoI2cPrivateLib.h>
 
 
 #define DISPLAY_TEST_REGISTER                 0x07
@@ -26,6 +27,8 @@
 #define DECODE_MODE_REGISTER                  0x01
 #define DECODE_MODE_DIGITS_OPERATION          0xFF
 
+#define SERIAL_IO_I2C_POSTCODE_NUMBER         5
+#define MAX_LED_DRV_DEVICE_SLAVE_ADDRESS      0x38 // MAX695A series device
 
 /**
   This function does the basic init work for Max6950.
@@ -39,8 +42,8 @@ MaxLedInit (
   )
 {
   UINT8  WriBuf[2] = { 0, 0};
-  UINT8  I2cNumber = PcdGet8(PcdI2cIoExpanderPortNumber);
-  UINT8  SlaveAddress = PcdGet8(PcdI2cMaxLedSlaveAddress);
+  UINT8  I2cNumber = SERIAL_IO_I2C_POSTCODE_NUMBER; //PcdGet8(PcdI2cIoExpanderPortNumber);
+  UINT8  SlaveAddress = MAX_LED_DRV_DEVICE_SLAVE_ADDRESS; //PcdGet8(PcdI2cMaxLedSlaveAddress);
   UINTN  PciCfgBase;
   EFI_STATUS Status;
 
@@ -146,4 +149,57 @@ MaxLedInit (
 
   DEBUG ((DEBUG_INFO, "MaxLedInit End 0x%x \n",Status));
   return EFI_SUCCESS;
+}
+
+
+/**
+  Send 4 digit PostCode commands to Max6950 device
+
+  @param[in]  PostCodeValue - 4 digit PostCode value to be displayed
+**/
+EFI_STATUS
+EFIAPI
+DisplayPostCode (
+  IN UINT32 PostCodeValue
+  )
+{
+  UINT16 SingleDigit;
+  UINT8  Index;
+  UINT8  WriBuf [2] ={0, 0};
+  UINT8  I2cNumber = SERIAL_IO_I2C_POSTCODE_NUMBER;
+  UINTN  PciCfgBase;
+  EFI_STATUS Status;
+
+  // I2C Post Code
+  PciCfgBase = (UINTN) SerialIoI2cPciCfgBase (I2cNumber);
+
+  //
+  // Write all the digits.
+  //
+  for (Index = 0; Index < 4; Index++) {
+    SingleDigit = (PostCodeValue >> (4 * Index)) & 0xF;
+
+    // Digit 0 register address 0x20
+    WriBuf [0] = 0x20+Index;
+    WriBuf [1] = (UINT8)SingleDigit;
+
+    Status = SerialIoI2cWrite (
+               PciCfgBase,
+               &I2cNumber, //I2cNumber
+               MAX_LED_DRV_DEVICE_SLAVE_ADDRESS,
+               2,
+               WriBuf,
+               1000000, //1sec
+               400, //400kHz
+               NULL,
+               TRUE,
+               TRUE
+               );
+  }
+
+  // Disable the Controller, set to D3 and  diable MSE
+  PciCfgBase = (UINTN) SerialIoI2cPciCfgBase (SERIAL_IO_I2C_POSTCODE_NUMBER);
+  SerialIoI2cPciDisable (PciCfgBase);
+
+  return Status;
 }
