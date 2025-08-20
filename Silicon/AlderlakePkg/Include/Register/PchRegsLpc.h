@@ -25,6 +25,16 @@
 #define R_ESPI_CFG_ESPI_LGIR1                     0x84                      ///< LPC Generic IO Range 1
 #define B_ESPI_CFG_ESPI_LGIR1_LDE                 BIT0
 
+#define R_ESPI_CFG_CS1IORE                        0xA0            ///< CS1 IO Routing Enables
+#define B_ESPI_CFG_CS1IORE_DPRE                   BIT14           ///< Debug Port CS1# Routing Enable
+#define B_ESPI_CFG_CS1IORE_MRE2                   BIT13           ///< Microcontroller #2 CS1# Routing Enable
+#define B_ESPI_CFG_CS1IORE_CARE                   BIT0            ///< Com Port A CS1# Routing Enable
+
+#define R_ESPI_CFG_CS1GIR1                        0xA4            ///< CS1 Generic IO Range 1
+#define N_ESPI_CFG_CS1GIR1_ADDR_MASK              18              ///< Address[7:2] Mask
+#define N_ESPI_CFG_CS1GIR1_ADDR                   2               ///< Address[15:2]
+#define B_ESPI_CFG_CS1GIR1_LDE                    BIT0            ///< LPC Decode Enable
+
 #define R_PCH_DMI_PCR_LPCLGIR1                    0x2730                       ///< LPC Generic I/O Range 1
 #define R_PCH_DMI_PCR_LPCLGIR2                    0x2734                       ///< LPC Generic I/O Range 2
 #define R_PCH_DMI_PCR_LPCLGIR3                    0x2738                       ///< LPC Generic I/O Range 3

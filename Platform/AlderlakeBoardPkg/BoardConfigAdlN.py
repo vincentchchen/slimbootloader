@@ -68,7 +68,7 @@ class Board(BaseBoard):
         self.ENABLE_SMM_REBASE    = 4
 
         # 0 - PCH UART0, 1 - PCH UART1, 2 - PCH UART2, 0xFF - EC UART 0x3F8
-        self.DEBUG_PORT_NUMBER = 0x0
+        self.DEBUG_PORT_NUMBER = 0xFF
 
         self.ENABLE_MULTI_USB_BOOT_DEV = 1
 

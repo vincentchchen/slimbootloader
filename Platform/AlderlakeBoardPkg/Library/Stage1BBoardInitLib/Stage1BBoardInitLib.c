@@ -186,7 +186,7 @@ PlatformIdInitialize (
 
   if (BoardId == 0) {
     GetBoardId (&BoardId);
-    SetPlatformId (BoardId);
+    SetPlatformId (0xA);//BoardId);
   }
 
   DEBUG ((DEBUG_INFO, "BoardId 0x%X \n", BoardId));
