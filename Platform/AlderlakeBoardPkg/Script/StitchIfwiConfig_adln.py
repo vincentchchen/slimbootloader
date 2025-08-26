@@ -218,6 +218,9 @@ def get_xml_change_list (platform, plt_params_list):
           ('./FlexIO/PcieLaneReversalConfiguration/PCIeCtrl3LnReversal',               'No'),
           ('./FlexIO/Type-CSubsystemConfiguration/XdciSplitDieConfig',                 'xDCI Split Die Enabled'),
           ('./FlexIO/Type-CSubsystemConfiguration/TcssPortEnMask',                     '0x3'),
+          ('./FlashSettings/FlashConfiguration/QuadOutReadEnable',                     'No'),
+          ('./FlashSettings/FlashConfiguration/QuadIoReadEnable',                      'No'),
+          ('./Dnx/OEMandPlatformIDs/DnxEnabled',                                       'No'),
         ])
 
     if 'rvp_ddr5' in plt_params_list:
