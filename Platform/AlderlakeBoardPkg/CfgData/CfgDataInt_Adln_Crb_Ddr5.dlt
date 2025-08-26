@@ -17,6 +17,7 @@ PLAT_NAME_CFG_DATA.PlatformName          | 'AdlNCrb'
 
 # Force ADLN CRB board to always boot to UEFI. Auto mode doesnt work on CRBs due to GPIO toggle pin not present.
 GEN_CFG_DATA.PayloadId                   | ''
+GEN_CFG_DATA.BootToShell                 | 1
 
 # FIPS mode enablement feature
 FEATURES_CFG_DATA.Features.MeFipsMode    | 0x0
@@ -30,9 +31,9 @@ FEATURES_CFG_DATA.Features.DTT           | 0x0
 #
 #Delta configuration for DDR
 #
-MEMORY_CFG_DATA.SpdAddressTable          | { 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+MEMORY_CFG_DATA.SpdAddressTable          | { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 MEMORY_CFG_DATA.SpdDataSel000            | 7
-MEMORY_CFG_DATA.SpdDataSel010            | 7
+MEMORY_CFG_DATA.SpdDataSel010            | 0
 MEMORY_CFG_DATA.SpdDataSel020            | 0
 MEMORY_CFG_DATA.SpdDataSel030            | 0
 MEMORY_CFG_DATA.SpdDataSel100            | 0
@@ -40,18 +41,18 @@ MEMORY_CFG_DATA.SpdDataSel101            | 0
 MEMORY_CFG_DATA.SpdDataSel110            | 0
 MEMORY_CFG_DATA.SpdDataSel120            | 0
 MEMORY_CFG_DATA.SpdDataSel130            | 0
-MEMORY_CFG_DATA.DqsMapCpu2DramMc0Ch0     | { 0, 0}
-MEMORY_CFG_DATA.DqsMapCpu2DramMc0Ch1     | { 0, 0}
-MEMORY_CFG_DATA.DqsMapCpu2DramMc0Ch2     | { 0, 0}
-MEMORY_CFG_DATA.DqsMapCpu2DramMc0Ch3     | { 0, 0}
+MEMORY_CFG_DATA.DqsMapCpu2DramMc0Ch0     | { 1, 0}
+MEMORY_CFG_DATA.DqsMapCpu2DramMc0Ch1     | { 1, 0}
+MEMORY_CFG_DATA.DqsMapCpu2DramMc0Ch2     | { 0, 1}
+MEMORY_CFG_DATA.DqsMapCpu2DramMc0Ch3     | { 0, 1}
 MEMORY_CFG_DATA.DqsMapCpu2DramMc1Ch0     | { 0, 0}
 MEMORY_CFG_DATA.DqsMapCpu2DramMc1Ch1     | { 0, 0}
 MEMORY_CFG_DATA.DqsMapCpu2DramMc1Ch2     | { 0, 0}
 MEMORY_CFG_DATA.DqsMapCpu2DramMc1Ch3     | { 0, 0}
-MEMORY_CFG_DATA.DqMapCpu2DramMc0Ch0      | {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-MEMORY_CFG_DATA.DqMapCpu2DramMc0Ch1      | {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-MEMORY_CFG_DATA.DqMapCpu2DramMc0Ch2      | {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-MEMORY_CFG_DATA.DqMapCpu2DramMc0Ch3      | {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+MEMORY_CFG_DATA.DqMapCpu2DramMc0Ch0      | {12, 9, 10, 11, 14, 13, 8, 15, 3, 1, 2, 0, 4, 7, 5, 6}
+MEMORY_CFG_DATA.DqMapCpu2DramMc0Ch1      | {8, 11, 10, 9, 12, 15, 13, 14, 2, 5, 6, 4, 7, 3, 1, 0}
+MEMORY_CFG_DATA.DqMapCpu2DramMc0Ch2      | {3, 0, 1, 2, 5, 6, 4, 7, 13, 9, 11, 8, 14, 15, 10, 12}
+MEMORY_CFG_DATA.DqMapCpu2DramMc0Ch3      | {2, 1, 3, 0, 4, 6, 5, 7, 8, 9, 10, 11, 13, 14, 12, 15}
 MEMORY_CFG_DATA.DqMapCpu2DramMc1Ch0      | {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 MEMORY_CFG_DATA.DqMapCpu2DramMc1Ch1      | {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 MEMORY_CFG_DATA.DqMapCpu2DramMc1Ch2      | {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
