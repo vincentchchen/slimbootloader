@@ -20,6 +20,7 @@
 #include <Library/VariableLib.h>
 #include <Library/ContainerLib.h>
 #include <Guid/GraphicsInfoHob.h>
+#include <Guid/SerialPortInfoGuid.h>
 #include <FspsUpd.h>
 #include <GlobalNvsAreaDef.h>
 #include <ConfigDataDefs.h>
@@ -1913,6 +1914,31 @@ UpdateSmmInfo (
 
 
 /**
+  Update Serial Interface Information for Payload
+
+  @param[in]  SerialPortInfo    Serial Interface Information to be updated for Payload
+
+**/
+VOID
+EFIAPI
+UpdateSerialPortInfo (
+  IN  SERIAL_PORT_INFO  *SerialPortInfo
+)
+{
+  SerialPortInfo->BaseAddr64 = GetSerialPortBase ();
+  SerialPortInfo->BaseAddr   = (UINT32) SerialPortInfo->BaseAddr64;
+  SerialPortInfo->RegWidth = GetSerialPortStrideSize();
+  if (GetDebugPort () >= PCH_MAX_SERIALIO_UART_CONTROLLERS) {
+    // IO Type
+    SerialPortInfo->Type = 1;
+  } else {
+    // MMIO Type
+    SerialPortInfo->Type = 2;
+  }
+}
+
+
+/**
  Update Hob Info with platform specific data
 
  @param  Guid          The GUID to tag the customized HOB.
@@ -1930,6 +1956,8 @@ PlatformUpdateHobInfo (
 
   if (Guid == &gEfiGraphicsInfoHobGuid) {
     UpdateFrameBufferInfo (HobInfo);
+  } else if (Guid == &gLoaderSerialPortInfoGuid) {
+    UpdateSerialPortInfo (HobInfo);
   } else if (Guid == &gEfiGraphicsDeviceInfoHobGuid) {
     UpdateFrameBufferDeviceInfo (HobInfo);
   } else if (Guid == &gOsBootOptionGuid) {

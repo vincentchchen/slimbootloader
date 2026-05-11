@@ -1820,6 +1820,115 @@ PciScanRootBridges (
   return EFI_SUCCESS;
 }
 
+
+/**
+  Fill PCI Root Bridge Resource Info into HOB
+
+  @param [in] Root                A pointer of the current root bridge
+  @param [in] RootBridgeInfoHob   A pointer of root bridge resource info HOB
+  @param [in] MaxRootBridgeCount  The maximum number of root bridges
+
+  @retval EFI_SUCCESS             Create HOBs successfully
+  @retval EFI_INVALID_PARAMETER   Invalid parameters passing
+  @retval EFI_LOAD_ERROR          Invalid data integrity
+
+ **/
+EFI_STATUS
+FillPciRootBridgeInfo (
+  IN      PCI_IO_DEVICE             *Root,
+  IN OUT  PCI_ROOT_BRIDGE_INFO_HOB  *RootBridgeInfoHob,
+  IN      UINT8                      MaxRootBridgeCount
+  )
+{
+  UINT8           Index;
+  UINT8           Count;
+  PCI_BAR_TYPE    BarType;
+
+  if ((RootBridgeInfoHob == NULL) || (Root == NULL)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  Count = RootBridgeInfoHob->Count;
+  if (Count >= MaxRootBridgeCount) {
+    return EFI_LOAD_ERROR;
+  }
+
+  RootBridgeInfoHob->Entry[Count].BusBase  = Root->BusNumberRanges.BusBase;
+  RootBridgeInfoHob->Entry[Count].BusLimit = Root->BusNumberRanges.BusLimit;
+  for (Index = 0; Index < PCI_MAX_BAR; Index++) {
+    if (Root->PciBar[Index].Length == 0) {
+      continue;
+    }
+    BarType = Root->PciBar[Index].BarType;
+    if ((BarType == PciBarTypeUnknown) || (BarType > PciBarTypePMem64)) {
+      continue;
+    }
+    RootBridgeInfoHob->Entry[Count].Resource[BarType - 1].ResBase   = Root->PciBar[Index].BaseAddress;
+    RootBridgeInfoHob->Entry[Count].Resource[BarType - 1].ResLength = Root->PciBar[Index].Length;
+  }
+  RootBridgeInfoHob->Count++;
+
+  return EFI_SUCCESS;
+}
+
+
+/**
+  Build PCI Root Bridge Info HOB
+
+   @param [in] RootBridges       A pointer of Root Bridges List
+   @param [in] RootBridgeCount   The number of found root bridges
+
+   @retval EFI_SUCCESS           Create HOBs successfully
+   @retval EFI_OUT_OF_RESOURCES  Out of Hob resource
+   @retval EFI_LOAD_ERROR        Invalid data integrity
+
+  **/
+EFI_STATUS
+BuildPciRootBridgeInfoHob (
+   IN  CONST PCI_IO_DEVICE   *RootBridges,
+   IN        UINT8            RootBridgeCount
+   )
+{
+  EFI_STATUS                 Status;
+  LIST_ENTRY                *CurrentLink;
+  PCI_ROOT_BRIDGE_INFO_HOB  *RootBridgeInfoHob;
+  PCI_IO_DEVICE             *Root;
+  UINTN                      Length;
+
+  Status = EFI_SUCCESS;
+
+  Length  = sizeof (PCI_ROOT_BRIDGE_INFO_HOB);
+  Length += sizeof (PCI_ROOT_BRIDGE_ENTRY) * RootBridgeCount;
+  RootBridgeInfoHob = BuildGuidHob (&gLoaderPciRootBridgeInfoGuid, Length);
+  if (RootBridgeInfoHob == NULL) {
+     return EFI_OUT_OF_RESOURCES;
+  }
+
+  ZeroMem (RootBridgeInfoHob, Length);
+  RootBridgeInfoHob->Revision = 1;
+  RootBridgeInfoHob->Count    = 0;
+
+  CurrentLink = RootBridges->ChildList.ForwardLink;
+  while ((CurrentLink != NULL) && (CurrentLink != &RootBridges->ChildList)) {
+    Root = PCI_IO_DEVICE_FROM_LINK (CurrentLink);
+    Status = FillPciRootBridgeInfo (Root, RootBridgeInfoHob, RootBridgeCount);
+    if (EFI_ERROR (Status)) {
+      break;
+    }
+    CurrentLink = CurrentLink->ForwardLink;
+  }
+
+  if (RootBridgeInfoHob->Count != RootBridgeCount) {
+    Status = EFI_LOAD_ERROR;
+  }
+
+  if (EFI_ERROR (Status)) {
+    RootBridgeInfoHob->Count = 0;
+  }
+  return Status;
+}
+
+
 /**
   Build Universal Payload PCI Root Bridge HOB with actual enumeration data
 
@@ -1969,6 +2078,7 @@ PciEnumeration (
 
   PciEnableDevices (RootBridges);
 
+  BuildPciRootBridgeInfoHob (RootBridges, RootBridgeCount);
   BuildUniversalPayloadPciRootBridgeHob (RootBridges, RootBridgeCount);
 
 #if DEBUG_PCI_ENUM

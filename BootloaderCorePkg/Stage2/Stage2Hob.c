@@ -258,6 +258,7 @@ BuildBaseInfoHob (
   IN  STAGE2_PARAM                     *Stage2Param
   )
 {
+  SERIAL_PORT_INFO                     *LegacySerialPortInfo;
   LOADER_FSP_INFO                      *LoaderFspInfo;
   MEMORY_MAP_INFO                      *MemoryMapInfo;
   UINT32                               Length;
@@ -280,6 +281,19 @@ BuildBaseInfoHob (
   if (LoaderFspInfo != NULL) {
     LoaderFspInfo->FspsBase   = PCD_GET32_WITH_ADJUST (PcdFSPSBase);
     LoaderFspInfo->FspHobList = (UINT32)(UINTN)LdrGlobal->FspHobList;
+  }
+
+  // Build serial port hob
+  LegacySerialPortInfo = BuildGuidHob (&gLoaderSerialPortInfoGuid, sizeof (SERIAL_PORT_INFO));
+  if (LegacySerialPortInfo != NULL) {
+    LegacySerialPortInfo->Revision    = LOADER_SERIAL_PORT_INFO_REVISION;
+    LegacySerialPortInfo->Type        = 1;
+    LegacySerialPortInfo->BaseAddr64  = 0x3F8;
+    LegacySerialPortInfo->BaseAddr    = 0x3F8;
+    LegacySerialPortInfo->Baud        = 115200;
+    LegacySerialPortInfo->RegWidth    = 1;
+    LegacySerialPortInfo->InputHertz  = 1843200;
+    LegacySerialPortInfo->UartPciAddr = 0;
   }
 
   // Build graphic info hob
@@ -700,7 +714,10 @@ BuildExtraInfoHob (
   )
 {
   LOADER_GLOBAL_DATA               *LdrGlobal;
+  SERIAL_PORT_INFO                 *LegacySerialPortInfo;
   UNIVERSAL_PAYLOAD_SERIAL_PORT_INFO *SerialPortInfo;
+  S3_DATA                          *S3Data;
+  SYSTEM_TABLE_INFO                *SystemTableInfo;
   SYS_CPU_INFO                     *SysCpuInfo;
   PERFORMANCE_INFO                 *PerformanceInfo;
   OS_BOOT_OPTION_LIST              *OsBootOptionInfo;
@@ -725,6 +742,7 @@ BuildExtraInfoHob (
   SECUREBOOT_INFO                  *SecureBootInfoHob;
 
   LdrGlobal = (LOADER_GLOBAL_DATA *)GetLoaderGlobalDataPointer();
+  S3Data    = (S3_DATA *)LdrGlobal->S3DataPtr;
 
   // Build library data hob
   LoaderLibData = BuildGuidHob (&gLoaderLibraryDataGuid, sizeof (LOADER_LIBRARY_DATA));
@@ -732,6 +750,12 @@ BuildExtraInfoHob (
     LoaderLibData->Count = (UINT16)PcdGet32 (PcdMaxLibraryDataEntry);
     LoaderLibData->Flags = 0;
     LoaderLibData->Data  = LdrGlobal->LibDataPtr;
+  }
+
+  // Update legacy serial port hob
+  LegacySerialPortInfo = (SERIAL_PORT_INFO *)GetGuidHobData (NULL, NULL, &gLoaderSerialPortInfoGuid);
+  if (LegacySerialPortInfo != NULL) {
+    PlatformUpdateHobInfo (&gLoaderSerialPortInfoGuid, LegacySerialPortInfo);
   }
 
   // Build serial port hob
@@ -744,6 +768,16 @@ BuildExtraInfoHob (
     SerialPortInfo->BaudRate        = 115200;
     SerialPortInfo->RegisterStride  = GetSerialPortStrideSize ();
     PlatformUpdateHobInfo (&gUniversalPayloadSerialPortInfoGuid, SerialPortInfo);
+  }
+
+  // Build ACPI Hob
+  SystemTableInfo = BuildGuidHob (&gLoaderSystemTableInfoGuid, sizeof (SYSTEM_TABLE_INFO));
+  if (SystemTableInfo != NULL) {
+    SystemTableInfo->AcpiTableBase = S3Data->AcpiBase;
+    SystemTableInfo->AcpiTableSize = S3Data->AcpiTop - S3Data->AcpiBase;
+    SystemTableInfo->SmbiosTableBase = (UINT64)PcdGet32 (PcdSmbiosTablesBase);
+    SystemTableInfo->SmbiosTableSize = (UINT32)PcdGet16 (PcdSmbiosTablesSize);
+    PlatformUpdateHobInfo (&gLoaderSystemTableInfoGuid, SystemTableInfo);
   }
 
   // Build Loader Platform Data Hob

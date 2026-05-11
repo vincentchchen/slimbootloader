@@ -81,6 +81,7 @@
 [Guids]
   gFspReservedMemoryResourceHobGuid
   gLoaderPlatformDeviceInfoGuid
+  gLoaderSystemTableInfoGuid
   gLoaderPerformanceInfoGuid
   gLoaderLibraryDataGuid
   gLoaderMemoryMapInfoGuid
@@ -101,6 +102,7 @@
   gUniversalPayloadPciRootBridgeInfoGuid
   gUniversalPayloadAcpiTableGuid
   gUniversalPayloadSmbiosTableGuid
+  gLoaderSerialPortInfoGuid
   gUniversalPayloadSerialPortInfoGuid
   gUniversalPayloadExtraDataGuid
   gPldSmmRegisterInfoGuid

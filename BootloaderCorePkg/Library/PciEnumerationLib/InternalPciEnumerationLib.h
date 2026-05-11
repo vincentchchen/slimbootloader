@@ -9,6 +9,7 @@
 #define __INTERNAL_PCI_ENUMERTION_LIB_H__
 
 #include <IndustryStandard/Pci.h>
+#include <Guid/PciRootBridgeInfoGuid.h>
 #include <UniversalPayload/PciRootBridges.h>
 #include <Library/PciEnumerationLib.h>
 
