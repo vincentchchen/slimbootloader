@@ -758,6 +758,15 @@ BuildExtraInfoHob (
     PlatformUpdateHobInfo (&gLoaderSerialPortInfoGuid, LegacySerialPortInfo);
   }
 
+  DEBUG ((DEBUG_ERROR, "vincent SerialPortInfo Revision = %x\n", LegacySerialPortInfo->Revision));
+  DEBUG ((DEBUG_ERROR, "vincent SerialPortInfo Type = %x\n", LegacySerialPortInfo->Type));
+  DEBUG ((DEBUG_ERROR, "vincent SerialPortInfo BaseAddr64 = %x\n", LegacySerialPortInfo->BaseAddr64));
+  DEBUG ((DEBUG_ERROR, "vincent SerialPortInfo BaseAddr = %x\n", LegacySerialPortInfo->BaseAddr));
+  DEBUG ((DEBUG_ERROR, "vincent SerialPortInfo Baud = %x\n", LegacySerialPortInfo->Baud));
+  DEBUG ((DEBUG_ERROR, "vincent SerialPortInfo RegWidth = %x\n", LegacySerialPortInfo->RegWidth));
+  DEBUG ((DEBUG_ERROR, "vincent SerialPortInfo InputHertz = %x\n", LegacySerialPortInfo->InputHertz));
+  DEBUG ((DEBUG_ERROR, "vincent SerialPortInfo UartPciAddr = %x\n", LegacySerialPortInfo->UartPciAddr));
+
   // Build serial port hob
   SerialPortInfo = BuildGuidHob (&gUniversalPayloadSerialPortInfoGuid, sizeof (UNIVERSAL_PAYLOAD_SERIAL_PORT_INFO));
   if (SerialPortInfo != NULL) {
@@ -779,6 +788,11 @@ BuildExtraInfoHob (
     SystemTableInfo->SmbiosTableSize = (UINT32)PcdGet16 (PcdSmbiosTablesSize);
     PlatformUpdateHobInfo (&gLoaderSystemTableInfoGuid, SystemTableInfo);
   }
+
+  DEBUG ((DEBUG_ERROR, "vincent SystemTableInfo AcpiTableBase = %x\n", SystemTableInfo->AcpiTableBase));
+  DEBUG ((DEBUG_ERROR, "vincent SystemTableInfo AcpiTableSize = %x\n", SystemTableInfo->AcpiTableSize));
+  DEBUG ((DEBUG_ERROR, "vincent SystemTableInfo SmbiosTableBase = %x\n", SystemTableInfo->SmbiosTableBase));
+  DEBUG ((DEBUG_ERROR, "vincent SystemTableInfo SmbiosTableSize = %x\n", SystemTableInfo->SmbiosTableSize));
 
   // Build Loader Platform Data Hob
   LoaderPlatformData = BuildGuidHob (&gLoaderPlatformDataGuid, sizeof (LOADER_PLATFORM_DATA));

@@ -1855,6 +1855,10 @@ FillPciRootBridgeInfo (
 
   RootBridgeInfoHob->Entry[Count].BusBase  = Root->BusNumberRanges.BusBase;
   RootBridgeInfoHob->Entry[Count].BusLimit = Root->BusNumberRanges.BusLimit;
+
+  DEBUG ((DEBUG_ERROR, "vincent BusBase %x = %x\n", Count, RootBridgeInfoHob->Entry[Count].BusBase));
+  DEBUG ((DEBUG_ERROR, "vincent BusLimit %x = %x\n", Count, RootBridgeInfoHob->Entry[Count].BusLimit));
+
   for (Index = 0; Index < PCI_MAX_BAR; Index++) {
     if (Root->PciBar[Index].Length == 0) {
       continue;
@@ -1865,6 +1869,9 @@ FillPciRootBridgeInfo (
     }
     RootBridgeInfoHob->Entry[Count].Resource[BarType - 1].ResBase   = Root->PciBar[Index].BaseAddress;
     RootBridgeInfoHob->Entry[Count].Resource[BarType - 1].ResLength = Root->PciBar[Index].Length;
+
+    DEBUG ((DEBUG_ERROR, "vincent ResBase %x = %x\n", BarType - 1, RootBridgeInfoHob->Entry[Count].Resource[BarType - 1].ResBase));
+    DEBUG ((DEBUG_ERROR, "vincent ResLength %x = %x\n", BarType - 1, RootBridgeInfoHob->Entry[Count].Resource[BarType - 1].ResLength));
   }
   RootBridgeInfoHob->Count++;
 
