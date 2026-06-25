@@ -103,6 +103,8 @@ class Board(BaseBoard):
         self.ENABLE_SMBIOS        = 1
         self.ENABLE_CSME_UPDATE   = 1
 
+        self.ENABLE_LINUX_PAYLOAD = 1
+
         # CSME update library is required to enable this option and will be available as part of CSME kit
         self.BUILD_CSME_UPDATE_DRIVER   = 0
 
@@ -120,7 +122,7 @@ class Board(BaseBoard):
         self.STAGE2_FD_SIZE       = 0x001F0000
 
         self.PAYLOAD_SIZE         = 0x00030000
-        self.EPAYLOAD_SIZE        = 0x00240000
+        self.EPAYLOAD_SIZE        = 0x00800000
 
         self.OS_LOADER_FD_SIZE    = 0x0005E000
         self.OS_LOADER_FD_NUMBLK  = self.OS_LOADER_FD_SIZE // self.FLASH_BLOCK_SIZE
@@ -193,7 +195,7 @@ class Board(BaseBoard):
         if self._SMBIOS_YAML_FILE:
             self.SIIPFW_SIZE += 0x1000
 
-        self.NON_REDUNDANT_SIZE   = 0x3BF000 + self.SIIPFW_SIZE
+        self.NON_REDUNDANT_SIZE   = 0xA00000 + self.SIIPFW_SIZE
         self.NON_VOLATILE_SIZE    = 0x001000
         self.SLIMBOOTLOADER_SIZE  = (self.TOP_SWAP_SIZE + self.REDUNDANT_SIZE) * 2 + \
                                     self.NON_REDUNDANT_SIZE + self.NON_VOLATILE_SIZE
@@ -212,7 +214,7 @@ class Board(BaseBoard):
             acm_btm = (acm_btm & 0xFFFC0000)
             self.ACM_SIZE     = acm_top - acm_btm
 
-        self.LOADER_RSVD_MEM_SIZE = 0xC00000
+        self.LOADER_RSVD_MEM_SIZE = 0x1800000
 
         # If mulitple VBT table support is required, list them as:
         #   {VbtImageId1 : VbtFileName1, VbtImageId2 : VbtFileName2, ...}

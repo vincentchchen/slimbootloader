@@ -17,11 +17,14 @@
 #include <Library/CryptoLib.h>
 #include <Library/SecureBootLib.h>
 #include <Library/DecompressLib.h>
+#include <Library/SpiFlashLib.h>
 
 #define  TEMP_BUF_ALIGN    0x10
 #define  AUTH_DATA_ALIGN   0x04
 
 #define  IS_FLASH_ADDRESS(x)   (((UINT32)(UINTN)(x)) >= 0xF0000000)
+#define  EXT_BIOS_BASE_ADDR    0xFE000000
+#define  EXT_BIOS_LIMIT_ADDR   0xFEFFFFFF
 
 STATIC
 BOOLEAN
@@ -53,6 +56,34 @@ ValidateContainerBounds (
   IN  CONTAINER_HDR     *ContainerHdr,
   IN  UINT32             ContainerSize
   );
+
+STATIC
+BOOLEAN
+GetSpiFlashOffsetForExtBios (
+  IN  UINT32             Address,
+  OUT UINT32            *FlashOffset
+  )
+{
+  FLASH_MAP            *FlashMapPtr;
+  UINT32                BiosRegionBase;
+
+  if ((Address < EXT_BIOS_BASE_ADDR) || (Address > EXT_BIOS_LIMIT_ADDR)) {
+    return FALSE;
+  }
+
+  FlashMapPtr = GetFlashMapPtr ();
+  if ((FlashMapPtr == NULL) || (FlashMapPtr->RomSize == 0)) {
+    return FALSE;
+  }
+
+  BiosRegionBase = (UINT32)(0x100000000ULL - FlashMapPtr->RomSize);
+  if (Address < BiosRegionBase) {
+    return FALSE;
+  }
+
+  *FlashOffset = Address - BiosRegionBase;
+  return TRUE;
+}
 
 /**
   Get the container pointer by the container signature
@@ -267,10 +298,14 @@ RegisterContainerInternal (
 {
   CONTAINER_LIST       *ContainerList;
   CONTAINER_HDR        *ContainerHdr;
+  CONTAINER_HDR         ContainerHdrLocal;
   CONTAINER_ENTRY      *ContainerEntry;
   UINT32                Index;
+  UINT32                FlashOffset;
   VOID                 *Buffer;
   UINT32                MaxHdrSize;
+  EFI_STATUS            Status;
+  BOOLEAN               UseSpiRead;
 
   if (ContainerSize == 0) {
     DEBUG ((DEBUG_ERROR, "Unknown container size not allowed\n"));
@@ -282,7 +317,18 @@ RegisterContainerInternal (
     return EFI_NOT_READY;
   }
 
-  ContainerHdr   = (CONTAINER_HDR *)(UINTN)ContainerBase;
+  UseSpiRead = GetSpiFlashOffsetForExtBios (ContainerBase, &FlashOffset);
+  if (UseSpiRead) {
+    Status = SpiFlashRead (FlashRegionBios, FlashOffset, sizeof (CONTAINER_HDR), (UINT8 *)&ContainerHdrLocal);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+
+    ContainerHdr = &ContainerHdrLocal;
+  } else {
+    ContainerHdr = (CONTAINER_HDR *)(UINTN)ContainerBase;
+  }
+
   if (!ValidateContainerBounds (ContainerHdr, ContainerSize)) {
     return EFI_SECURITY_VIOLATION;
   }
@@ -297,9 +343,13 @@ RegisterContainerInternal (
     return EFI_BUFFER_TOO_SMALL;
   }
 
-  MaxHdrSize = GetContainerHeaderSize (ContainerHdr) + SIGNATURE_AND_KEY_SIZE_MAX;
-  if (MaxHdrSize > ContainerHdr->DataOffset) {
+  if (UseSpiRead) {
     MaxHdrSize = ContainerHdr->DataOffset;
+  } else {
+    MaxHdrSize = GetContainerHeaderSize (ContainerHdr) + SIGNATURE_AND_KEY_SIZE_MAX;
+    if (MaxHdrSize > ContainerHdr->DataOffset) {
+      MaxHdrSize = ContainerHdr->DataOffset;
+    }
   }
 
   if (MaxHdrSize > ContainerSize) {
@@ -318,7 +368,17 @@ RegisterContainerInternal (
   ContainerList->Entry[Index].HeaderCache = (UINT32)(UINTN)Buffer;
   ContainerList->Entry[Index].HeaderSize  = MaxHdrSize ;
   ContainerList->Entry[Index].Base        = ContainerBase;
-  CopyMem (Buffer, (VOID *)(UINTN)ContainerBase, MaxHdrSize);
+  if (UseSpiRead) {
+    Status = SpiFlashRead (FlashRegionBios, FlashOffset, MaxHdrSize, (UINT8 *)Buffer);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "SPI read container header cache failed @0x%08x len=0x%x: %r\n",
+              FlashOffset, MaxHdrSize, Status));
+      FreePool (Buffer);
+      return Status;
+    }
+  } else {
+    CopyMem (Buffer, (VOID *)(UINTN)ContainerBase, MaxHdrSize);
+  }
   ContainerList->Count++;
 
   return EFI_SUCCESS;
@@ -638,6 +698,7 @@ AuthenticateContainerInternal (
   )
 {
   CONTAINER_HDR            *ContainerHdr;
+  CONTAINER_HDR             ContainerHdrLocal;
   CONTAINER_ENTRY          *ContainerEntry;
   COMPONENT_ENTRY          *CompEntry;
   UINT8                    *AuthData;
@@ -651,14 +712,29 @@ AuthenticateContainerInternal (
   UINT32                    AuthDataOffset;
   UINT32                    AuthDataLen;
   UINT32                    Index;
+  UINT32                    FlashOffset;
+  UINT32                    LookupSignature;
   LOADER_COMPRESSED_HEADER *CompressHdr;
   EFI_STATUS                Status;
   COMPONENT_CALLBACK_INFO   CbInfo;
   UINT64                    SignatureBuf;
+  BOOLEAN                   UseSpiRead;
 
   // Find authentication data offset and authenticate the container header
   Status = EFI_UNSUPPORTED;
-  ContainerEntry   = GetContainerBySignature (ContainerHeader->Signature);
+  LookupSignature = ContainerHeader->Signature;
+  UseSpiRead = GetSpiFlashOffsetForExtBios ((UINT32)(UINTN)ContainerHeader, &FlashOffset);
+  if (UseSpiRead) {
+    Status = SpiFlashRead (FlashRegionBios, FlashOffset, sizeof (CONTAINER_HDR), (UINT8 *)&ContainerHdrLocal);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+
+    LookupSignature = ContainerHdrLocal.Signature;
+  }
+
+  ContainerEntry = GetContainerBySignature (LookupSignature);
+
   if (ContainerEntry != NULL) {
     ContainerHdr     = (CONTAINER_HDR *)(UINTN)ContainerEntry->HeaderCache;
     ContainerHdrSize = GetContainerHeaderSize (ContainerHdr);
@@ -682,7 +758,7 @@ AuthenticateContainerInternal (
         AuthDataLen = ContainerEntry->HeaderSize - AuthDataOffset;
         Status = AuthenticateComponent ((UINT8 *)ContainerHdr, ContainerHdrSize,
                                         AuthType, AuthData, AuthDataLen, NULL,
-                                        GetContainerKeyUsageBySig (ContainerHeader->Signature));
+                                        GetContainerKeyUsageBySig (ContainerHdr->Signature));
         if ((!EFI_ERROR (Status)) && (ContainerCallback != NULL)) {
           // Update component Call back info after container header authenticaton is done
           // This info will used by firmware stage to extend to TPM
@@ -701,7 +777,7 @@ AuthenticateContainerInternal (
     if ((ContainerHdr->Flags & CONTAINER_HDR_FLAG_MONO_SIGNING) != 0) {
       // Additional verification if the container is signed monolithically.
       // It is required for the container to be loaded in memory before registeration.
-      if ((ContainerHdr->Count > 1) && !IS_FLASH_ADDRESS (ContainerHeader)) {
+      if ((ContainerHdr->Count > 1) && !IS_FLASH_ADDRESS (ContainerHdr)) {
         // Use the last entry to verify all other combined components
         CompEntry = (COMPONENT_ENTRY *)&ContainerHdr[1];
         for (Index = 0; Index < (UINT32)(ContainerHdr->Count - 1); Index++) {
@@ -1153,8 +1229,12 @@ LoadComponentWithCallback (
   BOOLEAN                   IsInFlash;
   COMPONENT_CALLBACK_INFO   CbInfo;
   UINT32                    ComponentId;
+  UINT32                    FlashOffset;
   UINT64                    ContainerIdBuf;
   UINT64                    ComponentIdBuf;
+  BOOLEAN                   UseSpiRead;
+  UINT8                     CompressHdrProbe[sizeof (LOADER_COMPRESSED_HEADER) + sizeof (UINT32)];
+  UINT32                    CompressHdrProbeSize;
 
   ComponentId = ContainerSig;
   CompLoc = 0;
@@ -1226,7 +1306,22 @@ LoadComponentWithCallback (
     return EFI_SECURITY_VIOLATION;
   }
 
-  CompressHdr  = (LOADER_COMPRESSED_HEADER *)CompData;
+  UseSpiRead = GetSpiFlashOffsetForExtBios ((UINT32)(UINTN)CompData, &FlashOffset);
+  if (UseSpiRead) {
+    CompressHdrProbeSize = sizeof (CompressHdrProbe);
+    if (CompressHdrProbeSize > CompLen) {
+      CompressHdrProbeSize = CompLen;
+    }
+
+    Status = SpiFlashRead (FlashRegionBios, FlashOffset, CompressHdrProbeSize, CompressHdrProbe);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+    CompressHdr = (LOADER_COMPRESSED_HEADER *)CompressHdrProbe;
+  } else {
+    CompressHdr = (LOADER_COMPRESSED_HEADER *)CompData;
+  }
+
   if (!IS_COMPRESSED (CompressHdr)) {
     return EFI_UNSUPPORTED;
   }
@@ -1304,7 +1399,17 @@ LoadComponentWithCallback (
     }
     CompBuf = AllocBuf;
     ScrBuf  = (UINT8 *)AllocBuf + ALIGN_UP (SignedDataLen, TEMP_BUF_ALIGN);
-    CopyMem (CompBuf, CompData, SignedDataLen);
+    if (UseSpiRead) {
+      Status = SpiFlashRead (FlashRegionBios, FlashOffset, SignedDataLen, CompBuf);
+      if (EFI_ERROR (Status)) {
+        DEBUG ((DEBUG_ERROR, "SPI read component data failed @0x%08x len=0x%x: %r\n",
+                FlashOffset, SignedDataLen, Status));
+        FreeTemporaryMemory (AllocBuf);
+        return Status;
+      }
+    } else {
+      CopyMem (CompBuf, CompData, SignedDataLen);
+    }
     if (LoadComponentCallback != NULL) {
       LoadComponentCallback (PROGESS_ID_COPY, NULL);
     }
@@ -1324,7 +1429,7 @@ LoadComponentWithCallback (
 
   // Verify the component
   Status = AuthenticateComponent (CompBuf, SignedDataLen, AuthType,
-             CompData + AuthDataOffset, AuthDataLen, HashData, Usage);
+             CompBuf + AuthDataOffset, AuthDataLen, HashData, Usage);
   if (LoadComponentCallback != NULL) {
     if(Status == EFI_SUCCESS){
       // Update component Call back info after authenticaton is done

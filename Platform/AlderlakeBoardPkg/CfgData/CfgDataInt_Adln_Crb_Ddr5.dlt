@@ -16,7 +16,7 @@ PLATFORMID_CFG_DATA.PlatformId           | 0x000A
 PLAT_NAME_CFG_DATA.PlatformName          | 'AdlNCrb'
 
 # Force ADLN CRB board to always boot to UEFI. Auto mode doesnt work on CRBs due to GPIO toggle pin not present.
-GEN_CFG_DATA.PayloadId                   | ''
+GEN_CFG_DATA.PayloadId                   | 'LINU'
 
 # FIPS mode enablement feature
 FEATURES_CFG_DATA.Features.MeFipsMode    | 0x0
