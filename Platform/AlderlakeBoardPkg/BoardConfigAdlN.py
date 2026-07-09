@@ -115,7 +115,7 @@ class Board(BaseBoard):
         self.STAGE1_DATA_SIZE     = 0x00014000
         self.FSP_M_STACK_TOP      = 0xFEF7FF00
         self.STAGE1B_SIZE         = 0x00200000
-        self.STAGE2_SIZE          = 0x000C2000
+        self.STAGE2_SIZE          = 0x000C5000
         self.STAGE2_FD_BASE       = 0x01000000
         self.STAGE2_FD_SIZE       = 0x001F0000
 
@@ -220,7 +220,7 @@ class Board(BaseBoard):
         #   the ImageId field in the VBT container.
         # VbtFileName is the VBT file name. It needs to be located under platform
         #   VbtBin folder.
-        self._MULTI_VBT_FILE      = {1:'VbtAdlNCrb.dat', 2:'VbtAdlNCrbEdp.dat'}
+        self._MULTI_VBT_FILE      = {1:'VbtAdlNCrb.dat', 2:'VbtAdlNCrbEdp.dat', 3:'VbtAdlNRvp.dat'}
 
         self.CFG_DATABASE_SIZE    = self.CFGDATA_SIZE
         self._generated_cfg_file_prefix = 'Autogen_'

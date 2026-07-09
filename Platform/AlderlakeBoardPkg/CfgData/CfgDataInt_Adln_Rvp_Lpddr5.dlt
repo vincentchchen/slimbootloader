@@ -72,7 +72,7 @@ MEMORY_CFG_DATA.WdtDisableAndLock | 0
 
 GRAPHICS_CFG_DATA.InternalGfx              | 0x2
 
-GEN_CFG_DATA.VbtImageId                    | 1
+GEN_CFG_DATA.VbtImageId                    | 3
 
 #Delta configuration for Silicon settings
 PLDSEL_CFG_DATA.PldSelGpio.Enable      | 1
@@ -280,11 +280,11 @@ GPIO_CFG_DATA.GpioPinConfig1_GPP_H11.GPIOSkip_GPP_H11 | 1
 GPIO_CFG_DATA.GpioPinConfig1_GPP_H12.GPIOSkip_GPP_H12 | 1
 GPIO_CFG_DATA.GpioPinConfig1_GPP_H13.GPIOSkip_GPP_H13 | 1
 GPIO_CFG_DATA.GpioPinConfig1_GPP_H14.GPIOSkip_GPP_H14 | 1
-GPIO_CFG_DATA.GpioPinConfig0_GPP_H15 | 0x0500E2A1
-GPIO_CFG_DATA.GpioPinConfig1_GPP_H15 | 0x070F0001
+# DDIB_HDMI_CTRLCLK, FSP sets to Native Function 1
+GPIO_CFG_DATA.GpioPinConfig1_GPP_H15.GPIOSkip_GPP_H15 | 1
 GPIO_CFG_DATA.GpioPinConfig1_GPP_H16.GPIOSkip_GPP_H16 | 1
-GPIO_CFG_DATA.GpioPinConfig0_GPP_H17 | 0x0500A2A1
-GPIO_CFG_DATA.GpioPinConfig1_GPP_H17 | 0x07110001
+# DDIB_HDMI_CTRLDATA, FSP sets to Native Function 1
+GPIO_CFG_DATA.GpioPinConfig1_GPP_H17.GPIOSkip_GPP_H17 | 1
 GPIO_CFG_DATA.GpioPinConfig1_GPP_H18.GPIOSkip_GPP_H18 | 1
 GPIO_CFG_DATA.GpioPinConfig1_GPP_H19.GPIOSkip_GPP_H19 | 1
 GPIO_CFG_DATA.GpioPinConfig1_GPP_H20.GPIOSkip_GPP_H20 | 1

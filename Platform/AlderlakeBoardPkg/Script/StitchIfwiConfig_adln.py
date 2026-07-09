@@ -94,7 +94,8 @@ def check_parameter(para_list):
         'crb'    : {},
         'quad'   : {},
         'debug'  : {},
-        'tsn'    : {}
+        'tsn'    : {},
+        'rvp_lp5': {}
        }
 
     para_help = \
@@ -103,6 +104,7 @@ def check_parameter(para_list):
         'quad'   -- Stitch IFWI with SPI QUAD mode
         'debug'  -- Enable DAM and DCI configuration (Only use for debug purpose but not for final production!)
         'tsn'    -- Stitch sample Tsn Mac address binary along with TSN AIC softstraps
+        'rvp_lp5' -- Stitch for RVP LP5 board (TWL / ADL-N LP5), matches bootable BIOS configuration
         """
     for para in para_list:
         if para == '':
@@ -243,6 +245,29 @@ def get_xml_change_list (platform, plt_params_list):
             ('./Debug/DirectConnectInterfaceConfiguration/Usb2DciOobEnable',                      'Yes'),
             ('./Debug/DirectConnectInterfaceConfiguration/Usb3DciOobEnable',                      'Yes'),
             ('./Debug/DirectConnectInterfaceConfiguration/Usb4DciOobEnable',                      'Yes'),
+            ])
+
+    if 'rvp_lp5' in plt_params_list:
+        print ("Applying changes for RVP LP5 board (TWL / ADL-N LP5)")
+        xml_change_list.append ([
+            ('./BuildSettings/HarnessGlobalData/HarnessProject',                                   'ADP-P PCH (w/ADL-N CPU) RDL v1.0.2.5'),
+            ('./BuildSettings/HarnessGlobalData/HarnessLabel',                                     'v0.39 ADP-P w/TWL and ADL-N CPU'),
+            ('./BuildSettings/HarnessGlobalData/HarnessRevision',                                  '#54'),
+            ('./FlashLayout/EcRegion/EcRegionPointer',                                             '$SourceDir\EcRegionPointer.bin'),
+            ('./FlashLayout/EcRegion/InputFile',                                                   '$SourceDir\EcRegion.bin'),
+            ('./FlashLayout/EcRegion/Enabled',                                                     'Enabled'),
+            ('./FlashSettings/FlashConfiguration/SpiDualOutReadEnable',                            'Yes'),
+            ('./FlashSettings/FlashConfiguration/SpiDualIoReadEnable',                             'Yes'),
+            ('./IntelMeKernel/IntelMeFirmwareUpdate/HmrfpoEnable',                                 'Yes'),
+            ('./PlatformProtection/BiosGuardConfiguration/BiosGrdProtOvrdEn',                      'Yes'),
+            ('./IntegratedSensorHub/IshImage/Length',                                              '0x48000'),
+            ('./Debug/DelayedAuthenticationModeConfiguration/DelayedAuthMode',                     'Yes'),
+            ('./Debug/IntelMeFirmwareDebuggingOverrides/DbgOverridePreProdSi',                     '0x0'),
+            ('./Debug/DirectConnectInterfaceConfiguration/DciDbcEnable',                           'Yes'),
+            ('./Debug/DirectConnectInterfaceConfiguration/Usb1DciOobEnable',                       'Yes'),
+            ('./Debug/DirectConnectInterfaceConfiguration/Usb3DciOobEnable',                       'Yes'),
+            ('./CpuStraps/CpuStraps/VccanaVrLocation',                                             'VCCANA is CPU FIVR'),
+            ('./FlexIO/SataPcieComboPortConfiguration/SataPCIeComboPort1',                         'PCIe'),
             ])
 
     return xml_change_list
